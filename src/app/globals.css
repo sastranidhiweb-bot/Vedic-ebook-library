@@ -1,0 +1,269 @@
+/* Category dropdown theming */
+.category-dropdown, .category-dropdown option {
+  background: var(--card) !important;
+  color: var(--text) !important;
+}
+
+[data-theme='dark'] .category-dropdown, [data-theme='dark'] .category-dropdown option {
+  background: var(--card) !important;
+  color: var(--text) !important;
+  border-color: var(--color-vb-input-border) !important;
+}
+
+.theme-light .category-dropdown, .theme-light .category-dropdown option {
+  background: var(--color-vb-input, #fff) !important;
+  color: var(--color-vb-normal-text, #000) !important;
+  border-color: var(--color-vb-input-border, #162715) !important;
+}
+/* Selected book background for light theme */
+.theme-light .category-panel-book-btn.selected {
+  background: #fff !important;
+  color: var(--color-vb-normal-text) !important;
+  box-shadow: 0 0 0 2px var(--color-vb-header-bottom, #eebd89);
+  z-index: 1;
+}
+
+[data-theme='dark'] .category-panel-book-btn.selected {
+  background: var(--bg) !important;
+  color: var(--text) !important;
+  box-shadow: 0 0 0 2px var(--border);
+  z-index: 1;
+}
+/* Book reading area and search bar theme-specific styles */
+.ebook-reader-content,
+.ebook-reader-searchbar,
+.ebook-reader-book-content {
+  background: var(--bg);
+  color: var(--text);
+}
+
+.theme-light .ebook-reader-content,
+.theme-light .ebook-reader-searchbar {
+  background: var(--color-vb-body, var(--bg));
+  color: var(--color-vb-normal-text, var(--text));
+}
+.theme-light .ebook-reader-book-content {
+  background: var(--book-content-bg, var(--color-vb-body, var(--bg)));
+  color: var(--book-content-text, var(--color-vb-normal-text, var(--text)));
+}
+.theme-light .ebook-reader-searchbar input {
+  background: var(--color-vb-input, #fff);
+  color: var(--color-vb-input-text, #000);
+  border-color: var(--color-vb-input-border, #162715);
+}
+/* Dark theme search bar input text color */
+[data-theme='dark'] .ebook-reader-searchbar input {
+  color: #eaeae7 !important;
+}
+/* CategoryPanel theme-specific text coloring */
+.category-panel-root,
+.category-panel-header,
+.category-panel-header-text,
+.category-panel-category-btn,
+.category-panel-category-text,
+.category-panel-book-btn,
+.category-panel-book-title,
+.category-panel-book-author,
+.category-panel-footer,
+.category-panel-footer-btn {
+  color: var(--text);
+}
+
+.theme-light .category-panel-root,
+.theme-light .category-panel-header,
+.theme-light .category-panel-header-text,
+.theme-light .category-panel-category-btn,
+.theme-light .category-panel-category-text,
+.theme-light .category-panel-book-btn,
+.theme-light .category-panel-book-title,
+.theme-light .category-panel-book-author,
+.theme-light .category-panel-footer,
+.theme-light .category-panel-footer-btn {
+  color: var(--color-vb-normal-text) !important;
+}
+/* Search input placeholder color for dark/light theme */
+.search-input::placeholder {
+  color: var(--book-content-text-light);
+}
+@import "tailwindcss";
+
+/* Vedic/Sanskrit themed color palette */
+
+
+:root, .theme-light {
+  --search-bar-bg: #f5ecd6;
+  --book-content-bg: #f3d4a5;
+  --book-content-text: #23263a;
+  --bg: #f8f9fa;
+  --card: #da9d5b;
+  --text: #23263a;
+  --accent: #eebd89;
+  --border: #e2e8f0;
+  --modal-bg: #23263a;
+  --modal-text: #eaeae7;
+  --icon: #23263a;
+  /* New theme-light variables */
+  --color-vb-header-top: #da9d5b;
+  --color-vb-header-bottom: #eebd89;
+  --color-vb-body: #f3d4a5;
+  --color-vb-dark: #a16207;
+  --color-vb-contrast: #ffedd2;
+  --color-vb-link: #b91c1c;
+  --color-vb-header-top-text: #000;
+  --color-vb-header-bottom-text: #604500;
+  --color-vb-normal-text: #000;
+  --color-vb-input: #fff;
+  --color-vb-input-border: #162715;
+  --color-vb-input-text: #000;
+  --color-vb-action-bg: #0f766e;
+  --color-vb-action-border: #0d4844;
+  --color-vb-action-text: #fff;
+}
+
+[data-theme='dark'] {
+    --search-bar-bg: #2c3142;
+    --book-content-bg: #dcd8d8;
+    --book-content-text: #0b0b0a;
+    --book-content-text-light: #e3e3de;
+  --bg: #181c2a;
+  --card: #23263a;
+  --text: #eaeae7;
+  --accent: #181c2a;
+  --border: #33374d;
+  --modal-bg: #23263a;
+  --modal-text: #eaeae7;
+  --icon: #fff;
+  --button-orange-bg: #ff9800;
+  --button-orange-text: #23263a;
+  --button-orange-hover: #ffa726;
+  --color-vb-input-border:#ff9800;
+/* Orange button style for dark theme */
+[data-theme='dark'] .vb-orange-btn {
+  background: var(--button-orange-bg) !important;
+  color: var(--button-orange-text) !important;
+  border: none;
+}
+[data-theme='dark'] .vb-orange-btn:hover {
+  background: var(--button-orange-hover) !important;
+}
+}
+/* Modal styling for BookListModal */
+.modal-table {
+  background: var(--modal-bg);
+  color: var(--modal-text);
+}
+.modal-table th {
+  background: var(--accent);
+  color: var(--text);
+}
+.modal-table td {
+  color: var(--modal-text);
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+}
+
+
+body {
+  font-family: "Times New Roman", Georgia, serif;
+  line-height: 1.7;
+  font-size: 16px;
+}
+
+/* Mobile responsive base */
+@media (max-width: 768px) {
+  body {
+    font-size: 14px;
+  }
+}
+
+/* Custom scrollbar for Vedic theme */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--cream);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--saffron);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--gold);
+}
+
+/* Reading container styles with accessibility-focused font sizes */
+.reading-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
+  line-height: 1.7;
+  /* Base font size will be controlled by component state for dynamic adjustment */
+}
+
+/* Mobile responsive reading container */
+@media (max-width: 768px) {
+  .reading-container {
+    padding: 1rem;
+    max-width: 100%;
+  }
+}
+
+/* Enhanced text readability for all age groups */
+.reading-container .prose {
+  max-width: none;
+}
+
+.reading-container p {
+  margin-bottom: 1.5em;
+  text-align: justify;
+}
+
+.reading-container h1,
+.reading-container h2,
+.reading-container h3 {
+  margin-top: 2em;
+  margin-bottom: 1em;
+  color: var(--deep-blue);
+}
+
+/* Sanskrit/Devanagari text styling */
+.sanskrit-text {
+  font-family: "Noto Sans Devanagari", "Times New Roman", serif;
+  font-size: 1.1em;
+  line-height: 1.9;
+}
+
+/* Chapter headings */
+.chapter-heading {
+  color: var(--deep-blue);
+  border-bottom: 2px solid var(--saffron);
+  padding-bottom: 0.5rem;
+  margin: 2rem 0 1rem 0;
+}
+
+/* Verse styling */
+.verse {
+  background: var(--cream);
+  border-left: 4px solid var(--saffron);
+  padding: 1rem;
+  margin: 1rem 0;
+  font-style: italic;
+}
+
+/* Upload area styling */
+.upload-area {
+  border: 2px dashed var(--saffron);
+  background: var(--cream);
+  transition: all 0.3s ease;
+}
+
+.upload-area:hover {
+  border-color: var(--gold);
+  background: var(--soft-orange);
+}
