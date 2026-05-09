@@ -37,6 +37,9 @@ const seedData = async () => {
       username: 'admin',
       email: process.env.ADMIN_EMAIL || 'admin@vedicebooks.com',
       password: 'SecureAdminPass123!', // Will be hashed by pre-save middleware
+      name: 'System Administrator',
+      dob: new Date('1980-01-01'),
+      contactNo: '+919999999999',
       role: 'admin',
       profile: {
         firstName: 'System',
@@ -59,6 +62,9 @@ const seedData = async () => {
         username: 'testuser1',
         email: 'user1@example.com',
         password: 'TestPass123!',
+        name: 'Test User One',
+        dob: new Date('1990-05-15'),
+        contactNo: '+918888888888',
         role: 'user',
         profile: {
           firstName: 'Test',
@@ -75,6 +81,9 @@ const seedData = async () => {
         username: 'testuser2',
         email: 'user2@example.com',
         password: 'TestPass123!',
+        name: 'Test User Two',
+        dob: new Date('1995-10-20'),
+        contactNo: '+917777777777',
         role: 'user',
         profile: {
           firstName: 'Test',

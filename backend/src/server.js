@@ -44,6 +44,8 @@ app.use(helmet({
 app.use(cors({
   origin: [
     'https://sastranidhi.tech',
+    'https://www.sastranidhi.org',
+    'https://sastranidhi.org',
     'http://localhost:3000'
   ],
   credentials: true,
