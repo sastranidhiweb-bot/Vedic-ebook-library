@@ -6,7 +6,7 @@
 
 A beautiful, responsive web application for reading Vedic scriptures and spiritual texts online. Upload Word documents and enjoy a distraction-free reading experience with Sanskrit and Devanagari support.
 
-## ✨ Features
+## ✨  Features
 
 - **📖 Word Document Reader**: Upload .docx files and read them online
 - **🎨 Vedic-Themed Design**: Beautiful saffron, gold, and deep blue color scheme
