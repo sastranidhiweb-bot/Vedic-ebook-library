@@ -17,6 +17,12 @@ const lora = Lora({
   weight: ["400", "500", "600", "700"],
 });
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+};
+
 export const metadata: Metadata = {
   title: "वेदिक ग्रंथालय - Vedic Library | Online E-Books Reader",
   description: "Read Vedic scriptures, spiritual texts, and sacred literature online. Upload Word documents and enjoy a beautiful reading experience with Sanskrit support.",

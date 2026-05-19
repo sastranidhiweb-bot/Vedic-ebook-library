@@ -1,0 +1,6 @@
+{
+  "app": {
+    "build": "npm install",
+    "start": "node src/server.js"
+  }
+}

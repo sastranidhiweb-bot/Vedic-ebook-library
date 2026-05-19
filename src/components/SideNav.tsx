@@ -60,8 +60,8 @@ const SideNav: React.FC<SideNavProps> = ({
     <div
       className="w-16 flex flex-col items-center py-4 space-y-4"
       style={{
-        background: 'var(--card)',
-        color: 'var(--text)',
+        background: 'var(--sidenav-bg)',
+        color: 'var(--sidenav-icon)',
         borderRight: '1px solid var(--color-vb-header-bottom, var(--border))',
       }}
     >
@@ -121,7 +121,7 @@ const SideNav: React.FC<SideNavProps> = ({
       {/* Navigation Icons - original only, unified style */}
       <div className="flex flex-col space-y-4 pt-6 border-t" style={{ borderColor: 'var(--color-vb-header-bottom, var(--border))' }}>
         <button
-          className="p-2 rounded-lg shadow-md backdrop-blur-md bg-white/90 hover:bg-white transition-all"
+          className="p-2 rounded-lg shadow-md backdrop-blur-md bg-yellow-50 hover:bg-yellow-100 transition-all"
           style={{ color: 'var(--color-vb-header-top-text, #1e293b)' }}
           title="Settings"
           onClick={() => setShowSettings(true)}
@@ -132,7 +132,7 @@ const SideNav: React.FC<SideNavProps> = ({
           <Settings onClose={() => setShowSettings(false)} />
         )}
         <button
-          className="p-2 rounded-lg shadow-md backdrop-blur-md bg-white/90 hover:bg-white transition-all"
+          className="p-2 rounded-lg shadow-md backdrop-blur-md bg-yellow-50 hover:bg-yellow-100 transition-all"
           style={{ color: 'var(--color-vb-header-top-text, #1e293b)' }}
           title="Profile"
           onClick={() => setShowProfile(true)}

@@ -5,7 +5,6 @@ import { ChevronLeft, ChevronRight, BookOpen, ArrowLeft, Settings, SkipForward, 
 import { updateBookProgress, fetchBookContent, fetchBooks, Book } from '../lib/bookStorage';
 import { useAuth } from '../contexts/AuthContext';
 import Header from './Header';
-import SideNav from './SideNav';
 import CategoryPanel from './CategoryPanel';
 
 interface EBookReaderProps {
@@ -46,6 +45,7 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
   const [selectedLanguage, setSelectedLanguage] = useState('english');
   const [expandedCategories, setExpandedCategories] = useState<{[key: string]: boolean}>({});
   const [isCategoryPanelVisible, setIsCategoryPanelVisible] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
   
   // IAST normalization function
@@ -283,6 +283,8 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
     setBookChapters([]);
     setCurrentPage(1);
     setPageInputValue('1');
+    // Auto-close panel on mobile after book selection
+    if (isMobile) setIsCategoryPanelVisible(false);
 
     // Fetch book content to get chapterswithPageNo and merge into categories
     fetchBookContent(book._id, 1, 'html')
@@ -957,6 +959,31 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
     setPageInputValue(currentPage.toString());
   }, [currentPage]);
 
+  // Mobile detection — auto-show/hide panel when crossing the 768px breakpoint
+  useEffect(() => {
+    let wasMobile = window.innerWidth < 768;
+    if (wasMobile) {
+      setIsMobile(true);
+      setIsCategoryPanelVisible(false);
+    }
+
+    const check = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (wasMobile && !mobile) {
+        // Crossed mobile → desktop: restore the sidebar
+        setIsCategoryPanelVisible(true);
+      } else if (!wasMobile && mobile) {
+        // Crossed desktop → mobile: hide the sidebar
+        setIsCategoryPanelVisible(false);
+      }
+      wasMobile = mobile;
+    };
+
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
   // Handle responsive font size on window resize
   useEffect(() => {
     const handleResize = () => {
@@ -1058,13 +1085,13 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
 
       if (event.key === '+' || event.key === '=') {
         event.preventDefault();
-        increasePageZoom();
+        increaseFontSize();
       } else if (event.key === '-' || event.key === '_') {
         event.preventDefault();
-        decreasePageZoom();
+        decreaseFontSize();
       } else if (event.key === '0') {
         event.preventDefault();
-        resetPageZoom();
+        setFontSize(22); // Reset to default
       }
     };
 
@@ -1285,109 +1312,135 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
   }
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#f9f9f9' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
       <div style={{ flex: '1 1 auto', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
         {/* Header Bar */}
-        <Header 
-          user={user} 
-          authUser={authUser} 
-          onLogout={onLogout} 
-          onViewChange={onViewChange} 
+        <Header
+          user={user}
+          onLogout={onLogout}
+          onViewChange={onViewChange}
+          selectedLanguage={selectedLanguage}
+          languageConfig={languageConfig}
+          onLanguageToggle={toggleLanguage}
+          onZoomIn={increaseFontSize}
+          onZoomOut={decreaseFontSize}
         />
 
-        <div style={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden' }}>
-          {/* Left Sidebar - Language Selection */}
-          <SideNav 
-            selectedLanguage={selectedLanguage}
-            languageConfig={languageConfig}
-            isCategoryPanelVisible={isCategoryPanelVisible}
-            onLanguageToggle={toggleLanguage}
-            onCategoryPanelToggle={toggleCategoryPanel}
-            onZoomIn={increasePageZoom}
-            onZoomOut={decreasePageZoom}
-          />
+        <div style={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden', position: 'relative' }}>
 
-          {/* Categories Panel */}
-          {isCategoryPanelVisible && (
-            <CategoryPanel
-              selectedLanguage={selectedLanguage}
-              languageConfig={languageConfig}
-              loadingBooks={loadingBooks}
-              expandedCategories={expandedCategories}
-              bookId={bookId}
-              onCategoryToggle={toggleCategoryExpanded}
-              onBookSelection={handleBookSelection}
-              onFoldAll={foldAllCategories}
-              onUnfoldAll={unfoldAllCategories}
-              bookChapters={bookChapters}
-              onChapterSelect={(pageNumber) => {
-                console.log('EBookReader: Navigating to chapter page', pageNumber);
-                setCurrentPage(pageNumber);
-                setPageInputValue(pageNumber.toString());
+          {/* Mobile overlay backdrop */}
+          {isMobile && isCategoryPanelVisible && (
+            <div
+              onClick={() => setIsCategoryPanelVisible(false)}
+              style={{
+                position: 'fixed',
+                inset: 0,
+                background: 'rgba(0,0,0,0.5)',
+                zIndex: 40,
               }}
-              refreshKey={categoryPanelRefreshKey}
             />
+          )}
+
+          {/* Categories Panel — drawer on mobile, inline on desktop */}
+          {isCategoryPanelVisible && (
+            <div
+              style={isMobile ? {
+                position: 'fixed',
+                left: 0,
+                top: 0,
+                bottom: 0,
+                zIndex: 50,
+                width: '85vw',
+                maxWidth: '320px',
+                display: 'flex',
+                flexDirection: 'column',
+                overflowY: 'auto',
+                boxShadow: '4px 0 24px rgba(0,0,0,0.25)',
+              } : {
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
+              <CategoryPanel
+                selectedLanguage={selectedLanguage}
+                languageConfig={languageConfig}
+                loadingBooks={loadingBooks}
+                expandedCategories={expandedCategories}
+                bookId={bookId}
+                onCategoryToggle={toggleCategoryExpanded}
+                onBookSelection={handleBookSelection}
+                onFoldAll={foldAllCategories}
+                onUnfoldAll={unfoldAllCategories}
+                bookChapters={bookChapters}
+                onChapterSelect={(pageNumber) => {
+                  console.log('EBookReader: Navigating to chapter page', pageNumber);
+                  setCurrentPage(pageNumber);
+                  setPageInputValue(pageNumber.toString());
+                  if (isMobile) setIsCategoryPanelVisible(false);
+                }}
+                refreshKey={categoryPanelRefreshKey}
+                onClose={isMobile ? () => setIsCategoryPanelVisible(false) : undefined}
+              />
+            </div>
           )}
 
           {/* Main Content Area */}
           <div className="flex-1 flex flex-col ebook-reader-content" style={{ background: 'var(--bg)', flex: 1, minHeight: 0, overflowY: 'auto' }}>
             {/* Search Bar */}
             {bookId && content && (
-              <div className="p-4 border-b border-amber-300 ebook-reader-searchbar" style={{ background: 'var(--search-bar-bg)' }}>
-                <div className="relative flex items-center space-x-2">
+              <div className="px-3 py-2 border-b border-amber-300 ebook-reader-searchbar" style={{ background: 'var(--search-bar-bg)' }}>
+                <div className="flex flex-col sm:flex-row gap-2">
                   <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2" size={20} style={{ color: 'var(--icon)' }} />
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2" size={16} style={{ color: 'var(--icon)' }} />
                     <input
                       type="text"
                       value={searchInput}
                       onChange={handleSearchChange}
                       onKeyDown={handleSearchKeyDown}
                       placeholder={`Search in "${displayTitle}"...`}
-                      className="w-full pl-10 pr-4 py-2 border border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent search-input"
+                      className="w-full pl-9 pr-4 py-2 border border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent search-input text-sm"
                       style={{ background: 'var(--search-bar-bg)', color: 'var(--book-content-text)' }}
                     />
                   </div>
-                  <button
-                    onClick={handleSearchSubmit}
-                    className="px-4 py-2 rounded-lg font-semibold border border-amber-400 transition-colors"
-                    style={{ background: 'var(--color-vb-action-bg, #0f766e)', color: 'var(--color-vb-action-text, #fff)' }}
-                    title="Search this book"
-                  >
-                    Search
-                  </button>
-                  
-                  {/* Search Results Navigation */}
-                  {showSearchResults && searchResults.length > 0 && (
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm text-amber-800">
-                        {currentSearchIndex + 1} of {searchResults.length}
-                      </span>
-                      <button
-                        onClick={goToPreviousSearchResult}
-                        className="p-1 hover:bg-amber-200 rounded text-amber-700"
-                        disabled={searchResults.length <= 1}
-                      >
-                        <ChevronLeft size={16} />
-                      </button>
-                      <button
-                        onClick={goToNextSearchResult}
-                        className="p-1 hover:bg-amber-200 rounded text-amber-700"
-                        disabled={searchResults.length <= 1}
-                      >
-                        <ChevronRight size={16} />
-                      </button>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <button
+                      onClick={handleSearchSubmit}
+                      className="px-3 py-2 rounded-lg font-semibold border border-amber-400 transition-colors text-sm"
+                      style={{ background: 'var(--color-vb-action-bg, #0f766e)', color: 'var(--color-vb-action-text, #fff)' }}
+                      title="Search this book"
+                    >
+                      Search
+                    </button>
+
+                    {/* Search Results Navigation */}
+                    {showSearchResults && searchResults.length > 0 && (
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs text-amber-800 whitespace-nowrap">
+                          {currentSearchIndex + 1}/{searchResults.length}
+                        </span>
+                        <button
+                          onClick={goToPreviousSearchResult}
+                          className="p-1 hover:bg-amber-200 rounded text-amber-700"
+                          disabled={searchResults.length <= 1}
+                        >
+                          <ChevronLeft size={14} />
+                        </button>
+                        <button
+                          onClick={goToNextSearchResult}
+                          className="p-1 hover:bg-amber-200 rounded text-amber-700"
+                          disabled={searchResults.length <= 1}
+                        >
+                          <ChevronRight size={14} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                
+
                 {/* Search Results Summary */}
                 {showSearchResults && (
-                  <div className="mt-2 text-sm text-amber-800">
-                    {searchResults.length > 0 ? (
-                      `Found ${searchResults.length} matches`
-                    ) : (
-                      searchQuery && 'No matches found'
-                    )}
+                  <div className="mt-1 text-xs text-amber-800">
+                    {searchResults.length > 0 ? `Found ${searchResults.length} matches` : searchQuery && 'No matches found'}
                   </div>
                 )}
               </div>
@@ -1496,14 +1549,28 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
                 {!isSearchMode && (
                   <div className="flex flex-col flex-1 overflow-hidden">
                     {/* Reading Controls */}
-                    <div className="border-b border-gray-200 p-4 flex-shrink-0">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-4">
-                          <BookOpen className="w-5 h-5" style={{ color: 'var(--icon)' }} />
-                          <span className="font-bold text-lg" style={{ color: 'var(--book-content-text-light)' }}>Reading: {title}</span>
+                    <div className="border-b border-gray-200 px-3 py-2 flex-shrink-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          {/* Mobile: toggle category panel */}
+                          <button
+                            className="md:hidden flex items-center gap-1 px-2 py-1 rounded-lg flex-shrink-0 text-xs font-semibold"
+                            onClick={toggleCategoryPanel}
+                            title="Browse Library"
+                            style={{
+                              color: isCategoryPanelVisible ? '#fef3c7' : 'var(--text)',
+                              background: isCategoryPanelVisible ? '#b45309' : 'var(--card)',
+                              border: '1px solid var(--border)',
+                            }}
+                          >
+                            <BookOpen className="w-3.5 h-3.5" />
+                            Library
+                          </button>
+                          <BookOpen className="w-4 h-4 hidden md:block flex-shrink-0" style={{ color: 'var(--icon)' }} />
+                          <span className="font-bold text-sm sm:text-base truncate" style={{ color: 'var(--book-content-text-light)' }}>{title}</span>
                         </div>
-                        
-                        <div className="flex items-center space-x-2">
+
+                        <div className="flex items-center gap-1 flex-shrink-0">
                           <button
                             onClick={decreaseFontSize}
                             className="p-2 rounded-lg hover:bg-gray-100 transition-colors text-gray-600"
@@ -1539,7 +1606,7 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
                           </button>
                           
                           {/* Page Navigation */}
-                          <div className="flex items-center space-x-2 border-l border-gray-300 pl-4 ml-2">
+                          <div className="flex items-center gap-0.5 border-l border-gray-300 pl-2 ml-1">
                             <button
                               onClick={goToPreviousPage}
                               disabled={currentPage === 1}
@@ -1585,15 +1652,47 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
                     </div>
 
                     {/* Book Content */}
-                    <div ref={contentRef} className="flex-1 overflow-y-auto p-6 ebook-reader-book-content" style={{ background: 'var(--book-content-bg)', color: 'var(--book-content-text)' }}>
-                      <div 
+                    <div ref={contentRef} className="flex-1 overflow-y-auto p-3 sm:p-6 ebook-reader-book-content" style={{ background: 'var(--book-content-bg)', color: 'var(--book-content-text)' }}>
+                      <div
                         className="prose max-w-none leading-relaxed"
                         style={{ fontSize: `${fontSize}px`, lineHeight: lineHeight, color: 'var(--book-content-text)' }}
-                        dangerouslySetInnerHTML={{ 
+                        dangerouslySetInnerHTML={{
                           __html: highlightedContent
                         }}
                       />
+                      {/* Bottom padding so FAB doesn't obscure last line on mobile */}
+                      {isMobile && <div style={{ height: '5rem' }} />}
                     </div>
+
+                    {/* Mobile FAB — Browse Library */}
+                    {isMobile && !isCategoryPanelVisible && (
+                      <button
+                        onClick={() => setIsCategoryPanelVisible(true)}
+                        style={{
+                          position: 'fixed',
+                          bottom: '1.25rem',
+                          right: '1.25rem',
+                          zIndex: 35,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.45rem',
+                          padding: '0.65rem 1.1rem',
+                          borderRadius: '999px',
+                          background: 'linear-gradient(135deg, #b45309, #d97706)',
+                          color: '#fef3c7',
+                          fontWeight: 700,
+                          fontSize: '0.85rem',
+                          border: 'none',
+                          cursor: 'pointer',
+                          boxShadow: '0 4px 16px rgba(180,83,9,0.45)',
+                          fontFamily: 'inherit',
+                        }}
+                        title="Browse Library"
+                      >
+                        <BookOpen className="w-4 h-4" />
+                        Browse Library
+                      </button>
+                    )}
 
                   </div>
                 )}
@@ -1605,16 +1704,147 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
                   <h2 className="text-xl font-semibold text-gray-700 mb-2">Book Not Found</h2>
                   <p className="text-gray-500 mb-2">The selected book could not be loaded</p>
                   <p className="text-gray-500">Please try selecting another book</p>
+                  {isMobile && (
+                    <button
+                      onClick={() => setIsCategoryPanelVisible(true)}
+                      className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full font-semibold text-sm"
+                      style={{ background: '#b45309', color: '#fef3c7', border: 'none', cursor: 'pointer' }}
+                    >
+                      <BookOpen className="w-4 h-4" /> Browse Library
+                    </button>
+                  )}
                 </div>
               </div>
             ) : (
-              <div className="flex-1 flex items-center justify-center bg-gray-50">
-                <div className="text-center">
-                  <BookOpen className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-                  <h2 className="text-xl font-semibold text-gray-700 mb-2">Welcome to Your Vedic Library</h2>
-                  <p className="text-gray-500 mb-2">Select a book from the categories on the left to start reading</p>
-                  <p className="text-gray-500">Browse through sacred texts and spiritual literature</p>
+              /* ── Welcome Screen ────────────────────────────── */
+              <div className="flex-1 overflow-y-auto" style={{ background: 'var(--bg)' }}>
+                {/* Banner */}
+                <div style={{
+                  background: 'linear-gradient(135deg, #7c4a12, #a16207)',
+                  padding: '1.5rem',
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '1rem',
+                }}>
+                  <div style={{
+                    width: 44, height: 44, borderRadius: '50%', flexShrink: 0,
+                    background: 'rgba(251,191,36,0.12)',
+                    border: '1.5px solid rgba(251,191,36,0.35)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: '#fbbf24', fontSize: '1.2rem',
+                  }}>✦</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <h2 style={{ color: '#fef3c7', fontSize: '1.2rem', fontWeight: 700, marginBottom: '0.35rem', fontFamily: '"Noto Serif Devanagari", Georgia, serif' }}>
+                      Welcome to Your Vedic Library
+                    </h2>
+                    <p style={{ color: 'rgba(254,243,199,0.78)', fontSize: '0.82rem', lineHeight: 1.6 }}>
+                      Browse sacred Śruti &amp; Smṛti literature. Select a text from the categories to begin your study.
+                    </p>
+                    <p style={{ color: '#fbbf24', fontSize: '0.78rem', marginTop: '0.5rem', fontStyle: 'italic', opacity: 0.9 }}>
+                      ॥ सा विद्या या विमुक्तये ॥
+                    </p>
+                    {/* Mobile: open category panel button */}
+                    {isMobile && (
+                      <button
+                        onClick={() => setIsCategoryPanelVisible(true)}
+                        style={{
+                          marginTop: '1rem',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.4rem',
+                          padding: '0.5rem 1.1rem',
+                          borderRadius: '999px',
+                          background: '#fbbf24',
+                          color: '#78350f',
+                          fontWeight: 700,
+                          fontSize: '0.85rem',
+                          border: 'none',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <BookOpen className="w-4 h-4" />
+                        Browse Library
+                      </button>
+                    )}
+                  </div>
                 </div>
+
+                {/* Category overview cards */}
+                <div style={{ padding: '1.5rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                  {[
+                    { icon: '📖', title: 'Śruti', sub: '4 categories', desc: 'Vedas & revealed texts' },
+                    { icon: '📚', title: 'Smṛti', sub: '6 categories', desc: 'Traditional literature' },
+                    { icon: '🔖', title: 'Saved texts', sub: 'Bookmarked', desc: 'Your reading list' },
+                  ].map(card => (
+                    <div key={card.title} style={{
+                      flex: '1 1 160px',
+                      background: 'var(--card)',
+                      border: '1px solid var(--border)',
+                      borderRadius: '0.75rem',
+                      padding: '1.1rem 1.25rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.85rem',
+                      boxShadow: '0 1px 4px rgba(180,120,0,0.07)',
+                    }}>
+                      <span style={{ fontSize: '1.6rem' }}>{card.icon}</span>
+                      <div>
+                        <div style={{ fontWeight: 700, color: 'var(--text)', fontSize: '0.95rem' }}>{card.title}</div>
+                        <div style={{ color: 'var(--text-light)', fontSize: '0.78rem', marginTop: '0.1rem' }}>{card.sub}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Recently viewed */}
+                {books.length > 0 && (
+                  <div style={{ padding: '0 1.5rem 1.5rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                      <h3 style={{ fontWeight: 700, color: 'var(--text)', fontSize: '0.95rem' }}>Recently available</h3>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      {books.slice(0, 5).map(book => (
+                        <button
+                          key={book._id}
+                          onClick={() => onBookSelect && onBookSelect(book)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '0.75rem 1rem',
+                            background: 'var(--card)',
+                            border: '1px solid var(--border)',
+                            borderLeft: '3px solid #b45309',
+                            borderRadius: '0.5rem',
+                            cursor: 'pointer',
+                            textAlign: 'left',
+                            width: '100%',
+                            transition: 'background 0.15s',
+                          }}
+                          onMouseEnter={e => (e.currentTarget.style.background = 'var(--card-hover)')}
+                          onMouseLeave={e => (e.currentTarget.style.background = 'var(--card)')}
+                        >
+                          <div>
+                            <div style={{ fontWeight: 600, color: 'var(--text)', fontSize: '0.9rem' }}>{book.title}</div>
+                            {book.author && (
+                              <div style={{ color: 'var(--text-light)', fontSize: '0.75rem', marginTop: '0.15rem' }}>{book.author}</div>
+                            )}
+                          </div>
+                          <span style={{
+                            fontSize: '0.7rem', fontWeight: 600,
+                            padding: '0.15rem 0.55rem',
+                            borderRadius: '999px',
+                            background: 'rgba(180,83,9,0.1)',
+                            border: '1px solid rgba(180,83,9,0.3)',
+                            color: '#92400e',
+                            flexShrink: 0,
+                            marginLeft: '0.75rem',
+                          }}>Śruti</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

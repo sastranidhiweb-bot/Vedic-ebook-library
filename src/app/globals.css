@@ -1,61 +1,460 @@
-/* Category dropdown theming */
-.category-dropdown, .category-dropdown option {
-  background: var(--card) !important;
-  color: var(--text) !important;
+@import "tailwindcss";
+
+/* ============================================================
+   VEDIC LIBRARY — GLOBAL DESIGN SYSTEM
+   Unified with Login page's warm saffron–golden palette
+   ============================================================ */
+
+/* ── Hindu / Vaishnava Color Tokens ──────────────────────────
+   Derived directly from Login page color language:
+     Deep saffron/maroon  →  yellow-900  (#78350f)
+     Amber                →  yellow-600  (#d97706)
+     Gold                 →  yellow-400  (#fbbf24)
+     Cream / parchment    →  yellow-50   (#fffbeb)
+     Light amber card     →  yellow-100  (#fef3c7)
+     Golden border        →  yellow-300  (#fcd34d)
+   ──────────────────────────────────────────────────────────── */
+
+/* ── Light Theme (default — matches login page) ───────────── */
+:root, .theme-light, [data-theme='light'] {
+  /* Base surfaces */
+  --bg:               #fdf6e3;         /* warm parchment page bg */
+  --card:             #fef3c7;         /* yellow-100 — login card bg */
+  --card-hover:       #fde68a;         /* yellow-200 — hover state */
+  --border:           #fcd34d;         /* yellow-300 — login border */
+  --border-strong:    #d97706;         /* amber-600 — strong accent border */
+
+  /* Text */
+  --text:             #78350f;         /* yellow-900 — login primary text */
+  --text-muted:       #92400e80;       /* yellow-800/50 — secondary text */
+  --text-light:       #a16207;         /* amber-700 — muted */
+
+  /* Accent / Action */
+  --accent:           #fbbf24;         /* yellow-400 — gold */
+  --accent-deep:      #d97706;         /* amber-600 — deeper gold */
+  --btn-primary-from: #fbbf24;         /* login gradient start */
+  --btn-primary-to:   #f59e0b;         /* login gradient end */
+  --btn-primary-text: #78350f;         /* yellow-900 */
+  --btn-dark-bg:      #78350f;         /* yellow-900 */
+  --btn-dark-text:    #fef3c7;         /* yellow-100 */
+
+  /* Header */
+  --header-bg:        #78350f;         /* deep saffron – warm, sacred */
+  --header-text:      #fef3c7;         /* cream */
+  --header-border:    #d97706;         /* amber stripe */
+
+  /* Sidebar / Nav */
+  --sidenav-bg:       #fef3c7;         /* yellow-100 */
+  --sidenav-border:   #fcd34d;         /* yellow-300 */
+  --sidenav-icon:     #92400e;         /* amber-800 */
+  --sidenav-active:   #78350f;         /* yellow-900 */
+
+  /* Category panel */
+  --panel-bg:         #fffbeb;         /* yellow-50 — lightest cream */
+  --panel-header-bg:  #fef3c7;         /* matches card bg for tabs/footer */
+  --panel-text:       #78350f;
+  --panel-hover:      #fde68a;
+
+  /* Reading area */
+  --reader-bg:        #fdf6e3;         /* warm parchment */
+  --reader-text:      #1c0a00;         /* near-black, easy to read */
+  --reader-border:    #fcd34d;
+
+  /* Inputs */
+  --input-bg:         #fffbeb;         /* yellow-50 — login input */
+  --input-border:     #fcd34d;         /* yellow-300 */
+  --input-text:       #78350f;
+  --input-placeholder:#a16207;
+  --input-focus:      #fbbf24;         /* yellow-400 ring */
+
+  /* Modal */
+  --modal-overlay:    rgba(120,53,15,0.35);
+  --modal-bg:         #fef3c7;
+  --modal-border:     #fcd34d;
+  --modal-text:       #78350f;
+  --modal-label:      #92400e;
+  --modal-input-bg:   #fffbeb;
+  --modal-input-text: #78350f;
+  --modal-input-ring: #fbbf24;
+  --modal-success:    #15803d;
+  --modal-error:      #dc2626;
+
+  /* Scrollbar */
+  --scrollbar-track:  #fef3c7;
+  --scrollbar-thumb:  #fbbf24;
+  --scrollbar-hover:  #d97706;
+
+  /* Misc */
+  --icon:             #92400e;
+  --cream:            #fef3c7;
+  --saffron:          #f97316;
+  --gold:             #fbbf24;
+  --deep-blue:        #78350f;         /* repurposed to deep maroon for Vedic feel */
+  --soft-orange:      #fde68a;
+
+  /* Legacy vb- tokens (kept for backward compat) */
+  --color-vb-header-top:          #78350f;
+  --color-vb-header-top-text:     #fef3c7;
+  --color-vb-header-bottom:       #d97706;
+  --color-vb-header-bottom-text:  #78350f;
+  --color-vb-body:                #fdf6e3;
+  --color-vb-normal-text:         #78350f;
+  --color-vb-input:               #fffbeb;
+  --color-vb-input-border:        #fcd34d;
+  --color-vb-input-text:          #78350f;
+  --color-vb-action-bg:           #78350f;
+  --color-vb-action-border:       #92400e;
+  --color-vb-action-text:         #fef3c7;
+  --color-vb-dark:                #92400e;
+  --color-vb-contrast:            #fde68a;
+  --color-vb-link:                #92400e;
+
+  /* Search bar */
+  --search-bar-bg:        #fde68a;
+  --book-content-bg:      #fdf6e3;
+  --book-content-text:    #1c0a00;
+  --book-content-text-light: #78350f;
 }
 
-[data-theme='dark'] .category-dropdown, [data-theme='dark'] .category-dropdown option {
-  background: var(--card) !important;
-  color: var(--text) !important;
-  border-color: var(--color-vb-input-border) !important;
+/* ── Dark Theme ───────────────────────────────────────────── */
+[data-theme='dark'] {
+  /* Base surfaces — deep maroon-black, like aged sandalwood */
+  --bg:               #1a0c00;
+  --card:             #2a1400;
+  --card-hover:       #3d1f00;
+  --border:           #5c3208;
+  --border-strong:    #d97706;
+
+  /* Text */
+  --text:             #fde68a;         /* warm golden cream */
+  --text-muted:       #d97706;
+  --text-light:       #fbbf24;
+
+  /* Accent */
+  --accent:           #d97706;
+  --accent-deep:      #fbbf24;
+  --btn-primary-from: #d97706;
+  --btn-primary-to:   #fbbf24;
+  --btn-primary-text: #1a0c00;
+  --btn-dark-bg:      #d97706;
+  --btn-dark-text:    #1a0c00;
+
+  /* Header */
+  --header-bg:        #1a0c00;
+  --header-text:      #fde68a;
+  --header-border:    #5c3208;
+
+  /* Sidebar */
+  --sidenav-bg:       #1a0c00;
+  --sidenav-border:   #3d1f00;
+  --sidenav-icon:     #d97706;
+  --sidenav-active:   #fbbf24;
+
+  /* Category panel */
+  --panel-bg:         #1a0c00;
+  --panel-header-bg:  #2a1400;
+  --panel-text:       #fde68a;
+  --panel-hover:      #3d1f00;
+
+  /* Reading area */
+  --reader-bg:        #231000;
+  --reader-text:      #fde68a;
+  --reader-border:    #5c3208;
+
+  /* Inputs */
+  --input-bg:         #2a1400;
+  --input-border:     #d97706;
+  --input-text:       #fde68a;
+  --input-placeholder:#a16207;
+  --input-focus:      #fbbf24;
+
+  /* Modal */
+  --modal-overlay:    rgba(0,0,0,0.6);
+  --modal-bg:         #2a1400;
+  --modal-border:     #d97706;
+  --modal-text:       #fde68a;
+  --modal-label:      #fbbf24;
+  --modal-input-bg:   #1a0c00;
+  --modal-input-text: #fde68a;
+  --modal-input-ring: #d97706;
+  --modal-success:    #4ade80;
+  --modal-error:      #f87171;
+
+  /* Scrollbar */
+  --scrollbar-track:  #1a0c00;
+  --scrollbar-thumb:  #d97706;
+  --scrollbar-hover:  #fbbf24;
+
+  /* Misc */
+  --icon:             #d97706;
+  --cream:            #2a1400;
+  --saffron:          #f97316;
+  --gold:             #fbbf24;
+  --deep-blue:        #fde68a;
+  --soft-orange:      #3d1f00;
+
+  /* Legacy vb- tokens */
+  --color-vb-header-top:          #1a0c00;
+  --color-vb-header-top-text:     #fde68a;
+  --color-vb-header-bottom:       #d97706;
+  --color-vb-header-bottom-text:  #fde68a;
+  --color-vb-body:                #231000;
+  --color-vb-normal-text:         #fde68a;
+  --color-vb-input:               #2a1400;
+  --color-vb-input-border:        #d97706;
+  --color-vb-input-text:          #fde68a;
+  --color-vb-action-bg:           #d97706;
+  --color-vb-action-border:       #fbbf24;
+  --color-vb-action-text:         #1a0c00;
+  --color-vb-dark:                #fbbf24;
+  --color-vb-contrast:            #3d1f00;
+  --color-vb-link:                #fbbf24;
+
+  /* Search bar */
+  --search-bar-bg:        #2a1400;
+  --book-content-bg:      #231000;
+  --book-content-text:    #fde68a;
+  --book-content-text-light: #d97706;
+
+  /* Dark-only orange button */
+  --button-orange-bg:     #d97706;
+  --button-orange-text:   #1a0c00;
+  --button-orange-hover:  #fbbf24;
 }
 
-.theme-light .category-dropdown, .theme-light .category-dropdown option {
-  background: var(--color-vb-input, #fff) !important;
-  color: var(--color-vb-normal-text, #000) !important;
-  border-color: var(--color-vb-input-border, #162715) !important;
-}
-/* Selected book background for light theme */
-.theme-light .category-panel-book-btn.selected {
-  background: #fff !important;
-  color: var(--color-vb-normal-text) !important;
-  box-shadow: 0 0 0 2px var(--color-vb-header-bottom, #eebd89);
-  z-index: 1;
+/* ── System Theme: follow OS preference when data-theme='system' ── */
+/* JS resolves 'system' → 'dark'/'light' at runtime; this CSS block
+   is a lightweight fallback for SSR / prefers-reduced-motion users. */
+@media (prefers-color-scheme: dark) {
+  body:not([data-theme='light']) {
+    --bg:               #1a0c00;
+    --card:             #2a1400;
+    --card-hover:       #3d1f00;
+    --border:           #5c3208;
+    --border-strong:    #d97706;
+    --text:             #fde68a;
+    --text-muted:       #d97706;
+    --text-light:       #fbbf24;
+    --accent:           #d97706;
+    --accent-deep:      #fbbf24;
+    --btn-primary-from: #d97706;
+    --btn-primary-to:   #fbbf24;
+    --btn-primary-text: #1a0c00;
+    --btn-dark-bg:      #d97706;
+    --btn-dark-text:    #1a0c00;
+    --header-bg:        #1a0c00;
+    --header-text:      #fde68a;
+    --header-border:    #5c3208;
+    --sidenav-bg:       #1a0c00;
+    --sidenav-border:   #3d1f00;
+    --sidenav-icon:     #d97706;
+    --sidenav-active:   #fbbf24;
+    --panel-bg:         #1a0c00;
+    --panel-header-bg:  #2a1400;
+    --panel-text:       #fde68a;
+    --panel-hover:      #3d1f00;
+    --reader-bg:        #231000;
+    --reader-text:      #fde68a;
+    --reader-border:    #5c3208;
+    --input-bg:         #2a1400;
+    --input-border:     #d97706;
+    --input-text:       #fde68a;
+    --input-placeholder:#a16207;
+    --input-focus:      #fbbf24;
+    --modal-overlay:    rgba(0,0,0,0.6);
+    --modal-bg:         #2a1400;
+    --modal-border:     #d97706;
+    --modal-text:       #fde68a;
+    --modal-label:      #fbbf24;
+    --modal-input-bg:   #1a0c00;
+    --modal-input-text: #fde68a;
+    --modal-input-ring: #d97706;
+    --modal-success:    #4ade80;
+    --modal-error:      #f87171;
+    --scrollbar-track:  #1a0c00;
+    --scrollbar-thumb:  #d97706;
+    --scrollbar-hover:  #fbbf24;
+    --cream:            #2a1400;
+    --gold:             #fbbf24;
+    --deep-blue:        #fde68a;
+    --soft-orange:      #3d1f00;
+    --search-bar-bg:    #2a1400;
+    --book-content-bg:  #231000;
+    --book-content-text:#fde68a;
+    --book-content-text-light: #d97706;
+  }
 }
 
-[data-theme='dark'] .category-panel-book-btn.selected {
-  background: var(--bg) !important;
-  color: var(--text) !important;
-  box-shadow: 0 0 0 2px var(--border);
-  z-index: 1;
-}
-/* Book reading area and search bar theme-specific styles */
-.ebook-reader-content,
-.ebook-reader-searchbar,
-.ebook-reader-book-content {
+/* ── Base Styles ──────────────────────────────────────────── */
+body {
   background: var(--bg);
   color: var(--text);
+  font-family: "Noto Serif Devanagari", "Times New Roman", Georgia, serif;
+  line-height: 1.7;
+  font-size: 16px;
+  transition: background 0.3s ease, color 0.3s ease;
 }
 
-.theme-light .ebook-reader-content,
-.theme-light .ebook-reader-searchbar {
-  background: var(--color-vb-body, var(--bg));
-  color: var(--color-vb-normal-text, var(--text));
+@media (max-width: 768px) {
+  body { font-size: 14px; }
 }
-.theme-light .ebook-reader-book-content {
-  background: var(--book-content-bg, var(--color-vb-body, var(--bg)));
-  color: var(--book-content-text, var(--color-vb-normal-text, var(--text)));
+
+/* ── Scrollbar ────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: var(--scrollbar-track); }
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 4px;
 }
-.theme-light .ebook-reader-searchbar input {
-  background: var(--color-vb-input, #fff);
-  color: var(--color-vb-input-text, #000);
-  border-color: var(--color-vb-input-border, #162715);
+::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-hover); }
+
+/* ── Vedic UI Utility Classes ─────────────────────────────── */
+
+/* Primary CTA button — golden gradient, login style */
+.vb-btn-primary {
+  background: linear-gradient(to right, var(--btn-primary-from), var(--btn-primary-to));
+  color: var(--btn-primary-text);
+  font-weight: 600;
+  border-radius: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  border: none;
+  transition: all 0.25s ease;
+  cursor: pointer;
 }
-/* Dark theme search bar input text color */
-[data-theme='dark'] .ebook-reader-searchbar input {
-  color: #eaeae7 !important;
+.vb-btn-primary:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(251,191,36,0.35);
 }
-/* CategoryPanel theme-specific text coloring */
+
+/* Dark/maroon button */
+.vb-btn-dark {
+  background: var(--btn-dark-bg);
+  color: var(--btn-dark-text);
+  font-weight: 600;
+  border-radius: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  border: none;
+  transition: all 0.25s ease;
+  cursor: pointer;
+}
+.vb-btn-dark:hover {
+  filter: brightness(1.12);
+  transform: translateY(-1px);
+}
+
+/* Icon button (header admin actions) */
+.icon-btn {
+  padding: 0.5rem;
+  border-radius: 0.75rem;
+  background: rgba(251,191,36,0.12);
+  color: var(--header-text);
+  transition: background 0.15s, color 0.15s, transform 0.15s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+}
+.icon-btn:hover, .icon-btn:focus {
+  background: var(--accent);
+  color: var(--btn-primary-text);
+  border-color: var(--accent-deep);
+  transform: scale(1.08);
+}
+
+/* User name badge */
+.user-badge {
+  background: rgba(251,191,36,0.15);
+  border: 1px solid rgba(251,191,36,0.35);
+  border-radius: 0.75rem;
+  padding: 0.375rem 1rem;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--header-text);
+  transition: all 0.15s;
+}
+.user-badge:hover {
+  background: var(--accent);
+  color: var(--btn-primary-text);
+}
+
+/* ── Reading Area ─────────────────────────────────────────── */
+.reading-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
+  line-height: 1.7;
+}
+@media (max-width: 768px) {
+  .reading-container { padding: 1rem; max-width: 100%; }
+}
+.reading-container .prose { max-width: none; }
+.reading-container p {
+  margin-bottom: 1.5em;
+  text-align: justify;
+}
+.reading-container h1,
+.reading-container h2,
+.reading-container h3 {
+  margin-top: 2em;
+  margin-bottom: 1em;
+  color: var(--deep-blue);
+}
+
+/* ── Sanskrit Typography ──────────────────────────────────── */
+.sanskrit-text {
+  font-family: "Noto Serif Devanagari", "Times New Roman", serif;
+  font-size: 1.1em;
+  line-height: 1.9;
+}
+
+/* ── Verse / Shloka Block ─────────────────────────────────── */
+.verse {
+  background: var(--card);
+  border-left: 4px solid var(--accent);
+  padding: 1rem;
+  margin: 1rem 0;
+  font-style: italic;
+  border-radius: 0 0.5rem 0.5rem 0;
+}
+
+/* ── Chapter Heading ──────────────────────────────────────── */
+.chapter-heading {
+  color: var(--deep-blue);
+  border-bottom: 2px solid var(--accent);
+  padding-bottom: 0.5rem;
+  margin: 2rem 0 1rem 0;
+}
+
+/* ── Upload Area ──────────────────────────────────────────── */
+.upload-area {
+  border: 2px dashed var(--accent);
+  background: var(--card);
+  transition: all 0.3s ease;
+  border-radius: 0.75rem;
+}
+.upload-area:hover {
+  border-color: var(--accent-deep);
+  background: var(--card-hover);
+}
+
+/* ── Modal Base ───────────────────────────────────────────── */
+.vb-modal {
+  background: var(--modal-bg);
+  color: var(--modal-text);
+  border: 1px solid var(--modal-border);
+  border-radius: 1rem;
+  box-shadow: 0 25px 60px var(--modal-overlay);
+}
+
+/* ── Category Dropdown ────────────────────────────────────── */
+.category-dropdown, .category-dropdown option {
+  background: var(--input-bg) !important;
+  color: var(--input-text) !important;
+  border-color: var(--input-border) !important;
+}
+
+/* ── Category Panel Classes ───────────────────────────────── */
 .category-panel-root,
 .category-panel-header,
 .category-panel-header-text,
@@ -66,78 +465,53 @@
 .category-panel-book-author,
 .category-panel-footer,
 .category-panel-footer-btn {
-  color: var(--text);
+  color: var(--panel-text);
 }
 
-.theme-light .category-panel-root,
-.theme-light .category-panel-header,
-.theme-light .category-panel-header-text,
-.theme-light .category-panel-category-btn,
-.theme-light .category-panel-category-text,
-.theme-light .category-panel-book-btn,
-.theme-light .category-panel-book-title,
-.theme-light .category-panel-book-author,
-.theme-light .category-panel-footer,
-.theme-light .category-panel-footer-btn {
-  color: var(--color-vb-normal-text) !important;
-}
-/* Search input placeholder color for dark/light theme */
-.search-input::placeholder {
-  color: var(--book-content-text-light);
-}
-@import "tailwindcss";
-
-/* Vedic/Sanskrit themed color palette */
-
-
-:root, .theme-light {
-  --search-bar-bg: #f5ecd6;
-  --book-content-bg: #f3d4a5;
-  --book-content-text: #23263a;
-  --bg: #f8f9fa;
-  --card: #da9d5b;
-  --text: #23263a;
-  --accent: #eebd89;
-  --border: #e2e8f0;
-  --modal-bg: #23263a;
-  --modal-text: #eaeae7;
-  --icon: #23263a;
-  /* New theme-light variables */
-  --color-vb-header-top: #da9d5b;
-  --color-vb-header-bottom: #eebd89;
-  --color-vb-body: #f3d4a5;
-  --color-vb-dark: #a16207;
-  --color-vb-contrast: #ffedd2;
-  --color-vb-link: #b91c1c;
-  --color-vb-header-top-text: #000;
-  --color-vb-header-bottom-text: #604500;
-  --color-vb-normal-text: #000;
-  --color-vb-input: #fff;
-  --color-vb-input-border: #162715;
-  --color-vb-input-text: #000;
-  --color-vb-action-bg: #0f766e;
-  --color-vb-action-border: #0d4844;
-  --color-vb-action-text: #fff;
+/* Selected book */
+.category-panel-book-btn.selected {
+  background: var(--card-hover) !important;
+  color: var(--text) !important;
+  box-shadow: 0 0 0 2px var(--accent);
+  z-index: 1;
 }
 
-[data-theme='dark'] {
-    --search-bar-bg: #2c3142;
-    --book-content-bg: #dcd8d8;
-    --book-content-text: #0b0b0a;
-    --book-content-text-light: #e3e3de;
-  --bg: #181c2a;
-  --card: #23263a;
-  --text: #eaeae7;
-  --accent: #181c2a;
-  --border: #33374d;
-  --modal-bg: #23263a;
-  --modal-text: #eaeae7;
-  --icon: #fff;
-  --button-orange-bg: #ff9800;
-  --button-orange-text: #23263a;
-  --button-orange-hover: #ffa726;
-  --color-vb-input-border:#ff9800;
-/* Orange button style for dark theme */
+/* ── Ebook Reader Classes ─────────────────────────────────── */
+.ebook-reader-content,
+.ebook-reader-searchbar,
+.ebook-reader-book-content {
+  background: var(--reader-bg);
+  color: var(--reader-text);
+}
+.ebook-reader-searchbar input {
+  background: var(--input-bg);
+  color: var(--input-text);
+  border-color: var(--input-border);
+}
+.ebook-reader-searchbar input::placeholder {
+  color: var(--input-placeholder);
+}
+
+/* ── Decorative Lotus Divider ─────────────────────────────── */
+.lotus-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 1.5rem 0;
+}
+.lotus-divider::before,
+.lotus-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--accent), transparent);
+}
+.lotus-divider span {
+  color: var(--accent-deep);
+  font-size: 1.1rem;
+}
+
+/* ── Orange dark-theme button (legacy) ───────────────────── */
 [data-theme='dark'] .vb-orange-btn {
   background: var(--button-orange-bg) !important;
   color: var(--button-orange-text) !important;
@@ -146,124 +520,38 @@
 [data-theme='dark'] .vb-orange-btn:hover {
   background: var(--button-orange-hover) !important;
 }
+
+/* ── Modal table ──────────────────────────────────────────── */
+.modal-table { background: var(--modal-bg); color: var(--modal-text); }
+.modal-table th { background: var(--panel-header-bg); color: var(--text); }
+.modal-table td { color: var(--modal-text); }
+
+/* ── Smooth theme transitions ─────────────────────────────── */
+*, *::before, *::after {
+  transition-property: background-color, border-color, color;
+  transition-duration: 0.2s;
+  transition-timing-function: ease;
 }
-/* Modal styling for BookListModal */
-.modal-table {
-  background: var(--modal-bg);
-  color: var(--modal-text);
-}
-.modal-table th {
-  background: var(--accent);
-  color: var(--text);
-}
-.modal-table td {
-  color: var(--modal-text);
+/* But NOT transforms/opacity (would make animations sluggish) */
+button, a {
+  transition: background-color 0.2s ease, border-color 0.2s ease,
+              color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease,
+              filter 0.2s ease, opacity 0.2s ease;
 }
 
-body {
-  background: var(--bg);
-  color: var(--text);
+/* ── Loading spinner ──────────────────────────────────────── */
+@keyframes vb-spin {
+  to { transform: rotate(360deg); }
+}
+.vb-spinner {
+  border: 3px solid var(--card-hover);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: vb-spin 0.75s linear infinite;
 }
 
-
-body {
-  font-family: "Times New Roman", Georgia, serif;
-  line-height: 1.7;
-  font-size: 16px;
-}
-
-/* Mobile responsive base */
-@media (max-width: 768px) {
-  body {
-    font-size: 14px;
-  }
-}
-
-/* Custom scrollbar for Vedic theme */
-::-webkit-scrollbar {
-  width: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: var(--cream);
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--saffron);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--gold);
-}
-
-/* Reading container styles with accessibility-focused font sizes */
-.reading-container {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 2rem;
-  line-height: 1.7;
-  /* Base font size will be controlled by component state for dynamic adjustment */
-}
-
-/* Mobile responsive reading container */
-@media (max-width: 768px) {
-  .reading-container {
-    padding: 1rem;
-    max-width: 100%;
-  }
-}
-
-/* Enhanced text readability for all age groups */
-.reading-container .prose {
-  max-width: none;
-}
-
-.reading-container p {
-  margin-bottom: 1.5em;
-  text-align: justify;
-}
-
-.reading-container h1,
-.reading-container h2,
-.reading-container h3 {
-  margin-top: 2em;
-  margin-bottom: 1em;
-  color: var(--deep-blue);
-}
-
-/* Sanskrit/Devanagari text styling */
-.sanskrit-text {
-  font-family: "Noto Sans Devanagari", "Times New Roman", serif;
-  font-size: 1.1em;
-  line-height: 1.9;
-}
-
-/* Chapter headings */
-.chapter-heading {
-  color: var(--deep-blue);
-  border-bottom: 2px solid var(--saffron);
-  padding-bottom: 0.5rem;
-  margin: 2rem 0 1rem 0;
-}
-
-/* Verse styling */
-.verse {
-  background: var(--cream);
-  border-left: 4px solid var(--saffron);
-  padding: 1rem;
-  margin: 1rem 0;
-  font-style: italic;
-}
-
-/* Upload area styling */
-.upload-area {
-  border: 2px dashed var(--saffron);
-  background: var(--cream);
-  transition: all 0.3s ease;
-}
-
-.upload-area:hover {
-  border-color: var(--gold);
-  background: var(--soft-orange);
+/* ── Auspicious om pattern watermark (subtle) ─────────────── */
+.vb-pattern-bg {
+  background-image: radial-gradient(circle at 20% 50%, rgba(251,191,36,0.04) 0%, transparent 50%),
+                    radial-gradient(circle at 80% 20%, rgba(217,119,6,0.04) 0%, transparent 50%);
 }

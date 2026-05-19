@@ -5,7 +5,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
   try {
     // Proxy the request to the backend API
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL;
-    const response = await fetch(`${backendUrl}/api/books/${bookId}`, {
+    const response = await fetch(`${backendUrl}/books/${bookId}`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',

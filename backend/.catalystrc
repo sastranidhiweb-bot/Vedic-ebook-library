@@ -1,0 +1,36 @@
+{
+  "defaults": {
+    "project": 1,
+    "env": 1
+  },
+  "actives": {
+    "project": 1,
+    "env": 1
+  },
+  "projects": [
+    {
+      "idx": 1,
+      "id": "38913000000017071",
+      "name": "Test-Vedic-EBook",
+      "domain": {
+        "id": "50041776675",
+        "name": "test-vedic-ebook-60070172012.development"
+      },
+      "timezone": "Asia/Kolkata",
+      "env": [
+        {
+          "idx": 1,
+          "id": "60070172012",
+          "name": "Development",
+          "type": 3
+        },
+        {
+          "idx": 2,
+          "id": "50041778668",
+          "name": "Production",
+          "type": 1
+        }
+      ]
+    }
+  ]
+}

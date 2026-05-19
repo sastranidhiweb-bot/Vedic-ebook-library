@@ -1,0 +1,30 @@
+{
+  "defaults": {
+    "project": 1,
+    "env": 1
+  },
+  "actives": {
+    "project": 1,
+    "env": 1
+  },
+  "projects": [
+    {
+      "idx": 1,
+      "id": "32921000000023004",
+      "name": "vedic-library-backend",
+      "domain": {
+        "id": "50041688849",
+        "name": "vedic-library-backend-60070542435.development"
+      },
+      "timezone": "Asia/Kolkata",
+      "env": [
+        {
+          "idx": 1,
+          "id": "60070542435",
+          "name": "Development",
+          "type": 3
+        }
+      ]
+    }
+  ]
+}

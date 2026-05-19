@@ -17,7 +17,7 @@ export async function GET(
     console.log('🔄 Proxying search request for book:', id, 'query:', query);
 
     // Forward the request to the backend
-    const backendUrl = `${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/books/${id}/search?q=${encodeURIComponent(query)}${limit ? `&limit=${encodeURIComponent(limit)}` : ''}`;
+    const backendUrl = `${process.env.NEXT_PUBLIC_BACKEND_API_URL}/books/${id}/search?q=${encodeURIComponent(query)}${limit ? `&limit=${encodeURIComponent(limit)}` : ''}`;
     console.log('📡 Backend URL:', backendUrl);
 
     const response = await fetch(backendUrl);
