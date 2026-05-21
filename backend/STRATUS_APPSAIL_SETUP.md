@@ -36,8 +36,19 @@ Mode selection:
 Core storage variables:
 
 - BOOK_STORAGE_PROVIDER=catalyst
-- CATALYST_STRATUS_BUCKET=<your_bucket_name>
+- BOOKS_BUCKET_NAME=<your_bucket_name>
 - BOOKS_OBJECT_PREFIX=books
+
+Recommended for your setup:
+
+- BOOKS_BUCKET_NAME=sastranidhi-storage
+- BOOKS_OBJECT_PREFIX=books
+- BOOK_STORAGE_PROVIDER=catalyst
+
+Compatibility fallback keys (use only if needed):
+
+- STRATUS_BUCKET_NAME=<your_bucket_name>
+- CATALYST_STRATUS_BUCKET=<your_bucket_name>
 
 Catalyst SDK initialization (use one of the two approaches):
 
@@ -60,6 +71,8 @@ Application variables:
 Notes:
 - The deployment zip excludes .env, so AppSail Environment Variables are required.
 - Do not store production secrets in committed files.
+- In Catalyst UI, enter key and value in separate fields (do not type KEY=VALUE as one string).
+- If Catalyst blocks a key as reserved, prefer BOOKS_BUCKET_NAME.
 
 ## 5) Optional local development variables
 
@@ -151,7 +164,7 @@ Added:
 If /api/health/storage returns error:
 
 - Missing bucket variable:
-  - Ensure CATALYST_STRATUS_BUCKET is set.
+  - Ensure BOOKS_BUCKET_NAME is set (or use STRATUS_BUCKET_NAME/CATALYST_STRATUS_BUCKET fallback).
 
 - SDK initialization error:
   - Ensure either CATALYST_CONFIG is valid JSON, or explicit project vars are set.

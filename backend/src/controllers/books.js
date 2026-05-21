@@ -7,6 +7,7 @@ import ReadingProgress from '../models/ReadingProgress.js';
 import { AppError, catchAsync, validationError } from '../middleware/errorHandler.js';
 import { extractTextContent, getPaginatedContent, extractHtmlContent } from '../utils/textExtractor.js';
 import optimizedCache from '../../utils/optimizedContentCache.js';
+import { saveBookFile, getBookReadStream, streamToResponse, deleteBookFile } from '../../utils/bookStorage.js';
 
 const normalizeSearchText = (input = '') => {
   return input
@@ -47,14 +48,9 @@ export const uploadBook = catchAsync(async (req, res, next) => {
   } = req.body;
 
   try {
-    // Save file to uploads/books directory
+    // Save file via configured storage provider (local or catalyst)
     const filename = `${Date.now()}_${req.file.originalname}`;
-    const uploadDir = path.join(process.cwd(), 'uploads', 'books');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    const filePath = path.join(uploadDir, filename);
-    fs.writeFileSync(filePath, req.file.buffer);
+    await saveBookFile(filename, req.file.buffer, req.file.mimetype, req);
 
     // Create book document
     const book = await Book.create({
@@ -93,7 +89,8 @@ export const uploadBook = catchAsync(async (req, res, next) => {
       }
     });
   } catch (error) {
-    return next(new AppError('Error uploading book file', 500));
+    console.error('[uploadBook] Error uploading book file:', error);
+    return next(new AppError(`Error uploading book file: ${error.message}`, 500));
   }
 });
 
@@ -232,27 +229,14 @@ export const getBookContent = catchAsync(async (req, res, next) => {
   }
 
   try {
-    // Construct file path
-    const filePath = path.join(process.cwd(), 'uploads', 'books', book.fileInfo.filename);
-    
-    // Check if file exists
-    if (!fs.existsSync(filePath)) {
-      return next(new AppError('Book file not found', 404));
-    }
-
-    // Get file stats
-    const stats = fs.statSync(filePath);
-
-    // Set appropriate headers
+    // Set response headers and stream file from configured storage provider
     res.set({
       'Content-Type': book.fileInfo.mimeType,
-      'Content-Length': stats.size,
       'Content-Disposition': `inline; filename="${book.fileInfo.originalName}"`,
       'Cache-Control': 'private, max-age=3600'
     });
 
-    // Stream the file
-    const readStream = fs.createReadStream(filePath);
+    const readStream = await getBookReadStream(book.fileInfo.filename, req);
     
     readStream.on('error', (error) => {
       console.error('File read error:', error);
@@ -262,9 +246,9 @@ export const getBookContent = catchAsync(async (req, res, next) => {
     });
 
     // Increment download count
-    book.incrementDownload();
+    await book.incrementDownload();
 
-    readStream.pipe(res);
+    streamToResponse(readStream, res);
   } catch (error) {
     return next(new AppError('Error accessing book file', 500));
   }
@@ -321,7 +305,7 @@ export const getBookText = catchAsync(async (req, res, next) => {
       // Cache miss - extract and cache the content
       console.log(`[getBookText] Cache miss for book ${book.title}, extracting content...`);
       try {
-        await optimizedCache.cacheBookContent(book, 'high');
+        await optimizedCache.cacheBookContent(book, 'high', req);
         // Now get the paginated content
         paginatedContent = await optimizedCache.getPaginatedContent(
           book._id.toString(), 
@@ -429,24 +413,8 @@ export const deleteBook = catchAsync(async (req, res, next) => {
   book.uploadInfo.lastModified = new Date();
   book.uploadInfo.modifiedBy = req.user.id;
 
-  // Move file from uploads/books to deleted/books
-  const uploadsDir = path.join(process.cwd(), 'uploads', 'books');
-  const deletedDir = path.join(process.cwd(), 'deleted', 'books');
-  if (!fs.existsSync(deletedDir)) {
-    fs.mkdirSync(deletedDir, { recursive: true });
-  }
-  const srcFile = path.join(uploadsDir, book.fileInfo.filename);
-  const destFile = path.join(deletedDir, book.fileInfo.filename);
-  console.log(`[DELETE] Moving file from ${srcFile} to ${destFile}`);
-  if (fs.existsSync(srcFile)) {
-        console.log(`[DELETE] File moved successfully.`);
-    try {
-      fs.renameSync(srcFile, destFile);
-    } catch (err) {
-      console.error('Error moving deleted book file:', err);
-      console.log(`[DELETE] Source file not found: ${srcFile}`);
-    }
-  }
+  // Remove file from configured storage provider and local cache copies
+  await deleteBookFile(book.fileInfo.filename, req);
 
   await book.save();
 

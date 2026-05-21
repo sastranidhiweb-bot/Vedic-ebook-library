@@ -158,7 +158,25 @@ export const fetchBookContent = async (bookId: string, page: number = 1, format:
       return null;
     }
     
-    const data = await response.json();
+    const rawBody = await response.text();
+    if (!rawBody || !rawBody.trim()) {
+      console.error('Empty response body for book content request', { bookId, page, format });
+      return null;
+    }
+
+    let data: any;
+    try {
+      data = JSON.parse(rawBody);
+    } catch (parseError) {
+      console.error('Failed to parse book content JSON response', {
+        bookId,
+        page,
+        format,
+        bodyPreview: rawBody.slice(0, 500),
+        parseError
+      });
+      return null;
+    }
     console.log('Book text response:', data);
     
     if (data.success) {

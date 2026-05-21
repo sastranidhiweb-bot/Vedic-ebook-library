@@ -1,5 +1,4 @@
 import express from 'express';
-import cors from 'cors';
 import crypto from 'crypto';
 import mongoose from 'mongoose';
 import { Cashfree, CFEnvironment } from 'cashfree-pg';
@@ -8,7 +7,6 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const router = express.Router();
-router.use(cors());
 router.use(express.json());
 router.use(express.urlencoded({ extended: true }));
 

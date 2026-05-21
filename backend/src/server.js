@@ -1,6 +1,6 @@
 import express from 'express';
-import cors from 'cors';
 import helmet from 'helmet';
+import cors from 'cors';
 import compression from 'compression';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
@@ -24,7 +24,10 @@ import categoriesRoutes from './routes/categories.js';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.X_ZOHO_CATALYST_LISTEN_PORT || process.env.PORT || 5000;
+
+// App runs behind Catalyst/AppSail proxy in production.
+app.set('trust proxy', 1);
 
 // Security middleware
 app.use(helmet({
@@ -39,13 +42,37 @@ app.use(helmet({
   },
 }));
 
-// CORS configuration
+// Enable backend CORS in local/dev. Keep it opt-in for production to avoid duplicate headers with proxy.
+const isProduction = process.env.NODE_ENV === 'production';
+const enableBackendCors = process.env.ENABLE_BACKEND_CORS === 'true' || !isProduction;
 
-app.use(cors({
-  origin: process.env.CORS_ORIGIN || false,
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-}));
+if (enableBackendCors) {
+  const allowedOrigins = (
+    process.env.CORS_ORIGIN ||
+    process.env.FRONTEND_URL ||
+    'http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173'
+  )
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
+  app.use(cors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error('Not allowed by CORS'));
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+  }));
+
+  app.options('*', cors());
+  console.log('✅ Backend CORS enabled for origins:', allowedOrigins.join(', '));
+} else {
+  console.log('ℹ️ Backend CORS disabled (handled by upstream/proxy)');
+}
 
 
 // Rate limiting
@@ -127,7 +154,7 @@ app.use('/api', cashfreeRoutes);
 app.use('/api/categories', categoriesRoutes);
 
 // 404 handler for unknown routes
-app.use('*', (req, res) => {
+app.use((req, res) => {
   res.status(404).json({
     success: false,
     message: `Route ${req.originalUrl} not found`

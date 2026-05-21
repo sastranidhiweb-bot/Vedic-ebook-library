@@ -38,9 +38,10 @@
     "mammoth": "^1.11.0",
     "mongoose": "^8.0.3",
     "morgan": "^1.10.0",
-    "multer": "^1.4.5-lts.1",
+    "nodemailer": "^6.10.0",
+    "multer": "1.4.4",
     "multer-gridfs-storage": "^5.0.2",
-    "pdf-parse": "^2.4.5",
+    "pdf-parse": "1.1.1",
     "pdf2pic": "^3.2.0",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
@@ -52,5 +53,8 @@
     "jest": "^29.7.0",
     "nodemon": "^3.0.2",
     "supertest": "^6.3.3"
+  },
+  "overrides": {
+    "pdf-parse": "1.1.1"
   }
 }

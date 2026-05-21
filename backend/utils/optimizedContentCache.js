@@ -15,6 +15,7 @@ import { dirname } from 'path';
 import fs from 'fs/promises';
 import fsSync from 'fs';
 import crypto from 'crypto';
+import { ensureLocalBookFile } from './bookStorage.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -36,6 +37,7 @@ class OptimizedContentCache {
       diskCacheTimeout: 24 * 60 * 60 * 1000, // 24 hours for disk cache
       wordsPerPage: 500,
       maxMemoryUsageMB: 100,      // Maximum 100MB in memory
+      maxDocxHtmlExtractionSizeMB: 4, // For large DOCX, avoid heavy HTML conversion
     };
     
     this.stats = {
@@ -64,11 +66,68 @@ class OptimizedContentCache {
    */
   async getFileHash(filePath) {
     try {
-      const data = await fs.readFile(filePath);
-      return crypto.createHash('md5').update(data).digest('hex');
+      const stat = await fs.stat(filePath);
+      return crypto
+        .createHash('md5')
+        .update(`${stat.size}:${stat.mtimeMs}`)
+        .digest('hex');
     } catch (error) {
       return Date.now().toString(); // Fallback to timestamp
     }
+  }
+
+  htmlToText(html = '') {
+    return html
+      .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+      .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  textToHtml(text = '') {
+    if (!text) return '<p></p>';
+    const escaped = text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+
+    return `<p>${escaped
+      .split(/\n{2,}/)
+      .map((para) => para.replace(/\n/g, '<br/>').trim())
+      .filter(Boolean)
+      .join('</p><p>')}</p>`;
+  }
+
+  estimateHeadingPagesFromHtml(htmlContent = '', wordsPerPage = 500) {
+    const headingMap = new Map();
+    const headingRegex = /<(h[1-6])[^>]*>(.*?)<\/\1>/gi;
+    let match;
+    let lastIndex = 0;
+    let wordCount = 0;
+
+    while ((match = headingRegex.exec(htmlContent)) !== null) {
+      const beforeHeading = htmlContent.slice(lastIndex, match.index);
+      wordCount += this.htmlToText(beforeHeading).split(/\s+/).filter(Boolean).length;
+
+      const headingText = this.htmlToText(match[2]);
+      if (headingText && !headingMap.has(headingText)) {
+        headingMap.set(headingText, Math.max(1, Math.floor(wordCount / wordsPerPage) + 1));
+      }
+
+      lastIndex = headingRegex.lastIndex;
+    }
+
+    return Array.from(headingMap.entries()).map(([heading, page]) => ({
+      chapterName: heading,
+      pageNumber: page
+    }));
   }
 
   /**
@@ -82,6 +141,34 @@ class OptimizedContentCache {
     }
     
     return totalSize / 1024 / 1024;
+  }
+
+  getContentSizeMB(textContent = '', htmlContent = '') {
+    const textBytes = Buffer.byteLength(textContent || '', 'utf8');
+    const htmlBytes = Buffer.byteLength(htmlContent || '', 'utf8');
+    return (textBytes + htmlBytes) / 1024 / 1024;
+  }
+
+  getProcessMemorySnapshot() {
+    const mem = process.memoryUsage();
+    return {
+      rssMB: Number((mem.rss / 1024 / 1024).toFixed(2)),
+      heapUsedMB: Number((mem.heapUsed / 1024 / 1024).toFixed(2)),
+      heapTotalMB: Number((mem.heapTotal / 1024 / 1024).toFixed(2)),
+      externalMB: Number((mem.external / 1024 / 1024).toFixed(2)),
+    };
+  }
+
+  logExtractionStep(bookId, title, step, extra = {}) {
+    console.log(
+      `[cacheBookContent][${bookId}] ${step}`,
+      {
+        title,
+        ...extra,
+        memory: this.getProcessMemorySnapshot(),
+        ts: new Date().toISOString(),
+      }
+    );
   }
 
   /**
@@ -141,56 +228,99 @@ class OptimizedContentCache {
   /**
    * Cache content with intelligent tier placement
    */
-  async cacheBookContent(book, priority = 'normal') {
+  async cacheBookContent(book, priority = 'normal', requestContext = null) {
     console.log('Start First loading of cacheBookContent.');
     const bookId = book._id.toString();
-    const filePath = path.join(__dirname, '../uploads/books', book.fileInfo.filename);
+    const startTime = Date.now();
+    const fileSizeMB = ((book.fileInfo?.fileSize || 0) / 1024 / 1024).toFixed(2);
+    const extension = (book.fileInfo?.fileExtension || '').toLowerCase();
     
     try {
+      this.logExtractionStep(bookId, book.title, 'start', {
+        priority,
+        filename: book.fileInfo?.filename,
+        extension,
+        fileSizeMB,
+      });
+
+      const filePath = await ensureLocalBookFile(book.fileInfo.filename, requestContext);
+      console.log(`[cacheBookContent] Using file path: ${filePath}`);
       console.log(`📖 Extracting content for book: ${book.title} (Priority: ${priority})`);
-      const startTime = Date.now();
+      this.logExtractionStep(bookId, book.title, 'local-file-ready', { filePath });
       
-      // Extract content
-      const textContent = await extractTextContent(filePath, book.fileInfo.fileExtension);
-      const htmlContent = await extractHtmlContent(filePath, book.fileInfo.fileExtension);
+      // Extract once for DOCX to avoid duplicate in-memory buffers.
+      const isDocx = extension === '.docx';
+      const numericFileSizeMB = (book.fileInfo.fileSize || 0) / 1024 / 1024;
+      let textContent = '';
+      let htmlContent = '';
+
+      if (isDocx) {
+        const useLowMemoryDocxPath = numericFileSizeMB > this.config.maxDocxHtmlExtractionSizeMB;
+        this.logExtractionStep(bookId, book.title, 'docx-extraction-mode-selected', {
+          useLowMemoryDocxPath,
+          thresholdMB: this.config.maxDocxHtmlExtractionSizeMB,
+        });
+
+        if (useLowMemoryDocxPath) {
+          console.log(
+            `⚠️ Large DOCX detected (${numericFileSizeMB.toFixed(2)}MB). Using low-memory extraction path.`
+          );
+          const textStart = Date.now();
+          textContent = await extractTextContent(filePath, book.fileInfo.fileExtension);
+          this.logExtractionStep(bookId, book.title, 'text-extracted-low-memory', {
+            elapsedMs: Date.now() - textStart,
+            textLength: textContent.length,
+          });
+
+          const htmlStart = Date.now();
+          htmlContent = this.textToHtml(textContent);
+          this.logExtractionStep(bookId, book.title, 'html-derived-from-text', {
+            elapsedMs: Date.now() - htmlStart,
+            htmlLength: htmlContent.length,
+          });
+        } else {
+          const htmlStart = Date.now();
+          htmlContent = await extractHtmlContent(filePath, book.fileInfo.fileExtension);
+          this.logExtractionStep(bookId, book.title, 'html-extracted-docx', {
+            elapsedMs: Date.now() - htmlStart,
+            htmlLength: htmlContent.length,
+          });
+
+          const textStart = Date.now();
+          textContent = this.htmlToText(htmlContent);
+          this.logExtractionStep(bookId, book.title, 'text-derived-from-html', {
+            elapsedMs: Date.now() - textStart,
+            textLength: textContent.length,
+          });
+        }
+      } else {
+        const textStart = Date.now();
+        textContent = await extractTextContent(filePath, book.fileInfo.fileExtension);
+        this.logExtractionStep(bookId, book.title, 'text-extracted-generic', {
+          elapsedMs: Date.now() - textStart,
+          textLength: textContent.length,
+        });
+
+        const htmlStart = Date.now();
+        htmlContent = await extractHtmlContent(filePath, book.fileInfo.fileExtension);
+        this.logExtractionStep(bookId, book.title, 'html-extracted-generic', {
+          elapsedMs: Date.now() - htmlStart,
+          htmlLength: htmlContent.length,
+        });
+      }
+
       const fileHash = await this.getFileHash(filePath);
+      this.logExtractionStep(bookId, book.title, 'file-hash-generated', { fileHash });
+
       // Extract chapters/headings (move logic from extractHeadingsWithPageNumbers here)
       let chapterswithPageNo = [];
       try {
-        // Get total pages
-        const htmlContentForChapters = htmlContent;
         const wordsPerPage = this.config.wordsPerPage || 500;
-        const firstPage = this.paginateHtmlContent(htmlContentForChapters, 1, wordsPerPage, {
-          bookId: bookId,
-          title: book.title,
-          author: book.author
-        }, 'html');
-        const totalPages = firstPage.totalPages;
-        const headingMap = new Map();
-        const headingRegex = /<(h[1-6])[^>]*>(.*?)<\/\1>/gi;
-        for (let page = 1; page <= totalPages; page++) {
-          const pageData = this.paginateHtmlContent(htmlContentForChapters, page, wordsPerPage, {
-            bookId: bookId,
-            title: book.title,
-            author: book.author
-          }, 'html');
-          const html = pageData.content;
-          let match;
-          let matchCount = 0;
-          const MAX_MATCHES = 1000;
-          while ((match = headingRegex.exec(html)) !== null) {
-            if (++matchCount > MAX_MATCHES) {
-              console.warn('⚠️ Too many heading matches in one page, breaking to avoid infinite loop.');
-              break;
-            }
-            const headingText = match[2].replace(/<[^>]+>/g, '').trim();
-            if (headingText && !headingMap.has(headingText)) {
-              headingMap.set(headingText, page);
-            }
-          }
-        }
-        chapterswithPageNo = Array.from(headingMap.entries()).map(([heading, page]) => ({ chapterName: heading, pageNumber: page }));
+        chapterswithPageNo = this.estimateHeadingPagesFromHtml(htmlContent, wordsPerPage);
       } catch (e) {
+        this.logExtractionStep(bookId, book.title, 'heading-estimation-failed', {
+          error: e?.message,
+        });
         chapterswithPageNo = [];
       }
       console.log(`Extracted chapters/headings for ${book.title}: ${JSON.stringify(chapterswithPageNo.length)}`);
@@ -213,21 +343,55 @@ class OptimizedContentCache {
         }
       };
 
+      this.logExtractionStep(bookId, book.title, 'cache-entry-created', {
+        extractionTime,
+        totalWords: cacheEntry.metadata.totalWords,
+        chapters: chapterswithPageNo.length,
+      });
+
       // Save to disk cache first
+      const diskStart = Date.now();
       await this.saveToDiskCache(bookId, cacheEntry);
+      this.logExtractionStep(bookId, book.title, 'disk-cache-saved', {
+        elapsedMs: Date.now() - diskStart,
+      });
 
       // Decide cache tier based on priority and memory usage
-      if (priority === 'high' || this.getMemoryUsageMB() < this.config.maxMemoryUsageMB) {
+      const contentSizeMB = this.getContentSizeMB(textContent, htmlContent);
+      const canPromoteToHot =
+        contentSizeMB <= 15 &&
+        this.getMemoryUsageMB() < this.config.maxMemoryUsageMB;
+
+      this.logExtractionStep(bookId, book.title, 'cache-tier-decision', {
+        contentSizeMB: Number(contentSizeMB.toFixed(2)),
+        canPromoteToHot,
+      });
+
+      if (priority === 'high' && canPromoteToHot) {
+        await this.promoteToHotCache(bookId, cacheEntry);
+      } else if (canPromoteToHot) {
         await this.promoteToHotCache(bookId, cacheEntry);
       } else {
         // Add to warm cache (metadata only)
         this.addToWarmCache(bookId, cacheEntry.metadata);
+        console.log(
+          `🌡️ Kept in warm cache only for ${book.title} (content size: ${contentSizeMB.toFixed(2)}MB)`
+        );
       }
 
       console.log(`✅ End First Content cached for: ${book.title} (${extractionTime}ms)`);
+      this.logExtractionStep(bookId, book.title, 'completed', {
+        totalElapsedMs: Date.now() - startTime,
+      });
       return { textContent, htmlContent };
       
     } catch (error) {
+      this.logExtractionStep(bookId, book.title, 'failed', {
+        errorName: error?.name,
+        errorMessage: error?.message,
+        stack: error?.stack,
+        totalElapsedMs: Date.now() - startTime,
+      });
       console.error(`❌ Failed to cache content for ${book.title}:`, error);
       throw error;
     }
