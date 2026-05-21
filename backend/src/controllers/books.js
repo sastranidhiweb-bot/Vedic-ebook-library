@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import path from 'path';
 import fs from 'fs';
 import Book from '../models/Book.js';
+import Category from '../models/Category.js';
 import ReadingProgress from '../models/ReadingProgress.js';
 import { AppError, catchAsync, validationError } from '../middleware/errorHandler.js';
 import { extractTextContent, getPaginatedContent, extractHtmlContent } from '../utils/textExtractor.js';
@@ -395,37 +396,48 @@ export const updateBook = catchAsync(async (req, res, next) => {
 
 // Delete book (admin only)
 export const deleteBook = catchAsync(async (req, res, next) => {
-    console.log(`[DELETE] Book request received for ID: ${req.params.id}`);
+  console.log(`[DELETE] Book request received for ID: ${req.params.id}`);
   const book = await Book.findById(req.params.id);
-    if (book) {
-      console.log(`[DELETE] Book found: ${book.title} (${book._id})`);
-    } else {
-      console.log(`[DELETE] Book not found for ID: ${req.params.id}`);
-    }
+  if (book) {
+    console.log(`[DELETE] Book found: ${book.title} (${book._id})`);
+  } else {
+    console.log(`[DELETE] Book not found for ID: ${req.params.id}`);
+  }
   
   if (!book) {
     return next(new AppError('Book not found', 404));
-    console.log(`[DELETE] Marking book as inactive and moving file...`);
   }
 
-  // Soft delete - mark as inactive
+  console.log('[DELETE] Removing book file from configured storage provider...');
+  await deleteBookFile(book.fileInfo.filename, req);
+
+  // Soft delete in books collection
   book.isActive = false;
   book.uploadInfo.lastModified = new Date();
   book.uploadInfo.modifiedBy = req.user.id;
-
-  // Remove file from configured storage provider and local cache copies
-  await deleteBookFile(book.fileInfo.filename, req);
-
   await book.save();
+
+  // Unlink this book from all categories where it is referenced.
+  const unlinkResult = await Category.updateMany(
+    { books: book._id },
+    { $pull: { books: book._id } }
+  );
+  const unlinkedCategoryCount = unlinkResult.modifiedCount || 0;
+  console.log(`[DELETE] Unlinked book from ${unlinkedCategoryCount} categories`);
 
   // Clear cache for deleted book
   await optimizedCache.clearBookCache(req.params.id);
   console.log(`🗑️ Cache cleared for deleted book: ${book.title}`);
-    console.log(`[DELETE] Book deletion process completed for ID: ${req.params.id}`);
+  console.log(`[DELETE] Book deletion process completed for ID: ${req.params.id}`);
 
   res.json({
     success: true,
-    message: 'Book deleted successfully'
+    message: 'Book deleted successfully',
+    data: {
+      deletedBookId: String(book._id),
+      deletedFilename: book.fileInfo.filename,
+      unlinkedCategoryCount,
+    }
   });
 });
 

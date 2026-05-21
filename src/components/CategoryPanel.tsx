@@ -48,6 +48,7 @@ const CategoryPanel: React.FC<CategoryPanelProps & { bookChapters?: { text: stri
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [userPrivileges, setUserPrivileges] = useState<string[] | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [manualRefreshKey, setManualRefreshKey] = useState(0);
 
   // Fetch categories and user privileges on client only
@@ -67,6 +68,7 @@ const CategoryPanel: React.FC<CategoryPanelProps & { bookChapters?: { text: stri
       const userStr = localStorage.getItem('vedic_user') || sessionStorage.getItem('vedic_user');
       if (userStr) {
         const userObj = JSON.parse(userStr);
+        setIsAdmin(userObj?.role === 'admin');
         if (userObj.privilegeForBooks) {
           if (Array.isArray(userObj.privilegeForBooks)) {
             privileges = userObj.privilegeForBooks;
@@ -74,8 +76,12 @@ const CategoryPanel: React.FC<CategoryPanelProps & { bookChapters?: { text: stri
             privileges = [userObj.privilegeForBooks];
           }
         }
+      } else {
+        setIsAdmin(false);
       }
-    } catch {}
+    } catch {
+      setIsAdmin(false);
+    }
     setUserPrivileges(privileges);
   }, [refreshKey, manualRefreshKey]);
   // (Removed duplicate userPrivileges and userPrivilege declarations. Only use state variable.)
@@ -126,6 +132,36 @@ const CategoryPanel: React.FC<CategoryPanelProps & { bookChapters?: { text: stri
     }
   };
 
+  const handleUnlinkBook = async (categoryId: string, book: any, event: React.MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (!categoryId || !book?._id) return;
+    const confirmed = window.confirm(`Unlink "${book.title}" from this category?`);
+    if (!confirmed) return;
+
+    try {
+      const token = localStorage.getItem('vedic_auth_token') || sessionStorage.getItem('vedic_auth_token');
+      const response = await fetch(`${BACKEND_API_URL}/categories/${categoryId}/unlink-book?bookId=${encodeURIComponent(String(book._id))}`, {
+        method: 'DELETE',
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data?.success) {
+        throw new Error(data?.error || 'Failed to unlink book from category');
+      }
+
+      setManualRefreshKey(k => k + 1);
+    } catch (error) {
+      console.error('Failed to unlink book:', error);
+      const message = error instanceof Error ? error.message : 'Failed to unlink book from category.';
+      alert(message);
+    }
+  };
+
   // MUI TreeView recursive rendering (always show children and books)
   const renderTree = (nodes: any[], parentId = '') => {
     return nodes.map((node, idx) => {
@@ -147,14 +183,40 @@ const CategoryPanel: React.FC<CategoryPanelProps & { bookChapters?: { text: stri
                   <div>
                     <span
                       onClick={() => handleBookToggle(book)}
-                      style={{ cursor: 'pointer', fontWeight: isSelected ? 'bold' : 'normal', color: isSelected ? undefined : undefined, display: 'flex', alignItems: 'center', gap: 4 }}
+                      style={{ cursor: 'pointer', fontWeight: isSelected ? 'bold' : 'normal', color: isSelected ? undefined : undefined, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}
                     >
-                      <span style={{ color: 'var(--text)', fontSize: '1em', display: 'inline-block', width: 18, textAlign: 'center' }}>
-                        {rest.bookChapters && isSelected ? (
-                          isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />
-                        ) : ''}
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 4, minWidth: 0 }}>
+                        <span style={{ color: 'var(--text)', fontSize: '1em', display: 'inline-block', width: 18, textAlign: 'center', flexShrink: 0 }}>
+                          {rest.bookChapters && isSelected ? (
+                            isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />
+                          ) : ''}
+                        </span>
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{book.title}</span>
                       </span>
-                      {book.title}
+                      {isAdmin && node?._id && (
+                        <button
+                          type="button"
+                          title="Unlink this book from category"
+                          onClick={(event) => handleUnlinkBook(String(node._id), book, event)}
+                          style={{
+                            width: 18,
+                            height: 18,
+                            borderRadius: '999px',
+                            border: '1px solid #ef4444',
+                            color: '#ef4444',
+                            background: 'transparent',
+                            fontSize: 12,
+                            lineHeight: 1,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            flexShrink: 0,
+                          }}
+                        >
+                          x
+                        </button>
+                      )}
                     </span>
                     {/* Show chapters if this book is selected, expanded, and bookChapters exist */}
                     {isSelected && isExpanded && rest.bookChapters && rest.bookChapters.length > 0 && (

@@ -77,8 +77,37 @@ const linkBookToCategory = async (req, res) => {
   }
 };
 
+// Unlink a book from a category (leaf node)
+const unlinkBookFromCategory = async (req, res) => {
+  try {
+    const { id } = req.params; // category id
+    const bookId = req.body?.bookId || req.query?.bookId;
+
+    if (!bookId) {
+      return res.status(400).json({ error: 'bookId is required' });
+    }
+
+    const category = await Category.findById(id);
+    if (!category) {
+      return res.status(404).json({ error: 'Category not found' });
+    }
+
+    if (!category.books || !category.books.some((book) => String(book) === String(bookId))) {
+      return res.status(404).json({ error: 'Book is not linked to this category' });
+    }
+
+    category.books = category.books.filter((book) => String(book) !== String(bookId));
+    await category.save();
+
+    res.json({ success: true, message: 'Book unlinked from category', category });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to unlink book', details: err.message });
+  }
+};
+
 export default {
   getCategoryTree,
   getCategoryBooks,
-  linkBookToCategory
+  linkBookToCategory,
+  unlinkBookFromCategory
 };
