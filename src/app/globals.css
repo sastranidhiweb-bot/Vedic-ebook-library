@@ -114,9 +114,39 @@
   --book-content-bg:      #fdf6e3;
   --book-content-text:    #1c0a00;
   --book-content-text-light: #78350f;
+
+  /* Panel header gradient & label color */
+  --panel-header-gradient: linear-gradient(135deg, #b45309, #d97706);
+  --panel-header-color:    #fef3c7;
+
+  /* Header badge (pills, logo circle, user pill) */
+  --header-badge-bg:       rgba(180,83,9,0.06);
+  --header-badge-border:   rgba(180,83,9,0.35);
+
+  /* Logout button */
+  --logout-bg:             #b45309;
+  --logout-bg-hover:       #92400e;
+  --logout-color:          #fef3c7;
+
+  /* Top decorative stripe */
+  --stripe-gradient:       linear-gradient(to right, #d97706, #fbbf24, #fde68a, #fbbf24, #d97706);
+
+  /* Content area item hover (search results, lists on light bg) */
+  --content-item-hover:    #fde68a;
+
+  /* Icon button */
+  --icon-btn-bg:           rgba(180,83,9,0.08);
+  --icon-btn-border:       rgba(180,83,9,0.20);
+
+  /* Header shadow */
+  --header-shadow:         0 2px 10px rgba(180,120,0,0.12);
+
+  /* Search term highlight */
+  --search-highlight-bg:   #ffe066;
+  --search-highlight-text: #7c2d12;
 }
 
-/* ── Dark Theme ───────────────────────────────────────────── */
+/* ── Dark Theme ───────────────────────────────────────────────── */
 [data-theme='dark'] {
   /* Base surfaces — deep maroon-black, like aged sandalwood */
   --bg:               #1a0c00;
@@ -220,7 +250,272 @@
   --button-orange-bg:     #d97706;
   --button-orange-text:   #1a0c00;
   --button-orange-hover:  #fbbf24;
+
+  /* Panel header gradient & label color */
+  --panel-header-gradient: linear-gradient(135deg, #2a1400, #5c3208);
+  --panel-header-color:    #fde68a;
+
+  /* Header badge (pills, logo circle, user pill) */
+  --header-badge-bg:       rgba(217,119,6,0.10);
+  --header-badge-border:   rgba(217,119,6,0.35);
+
+  /* Logout button */
+  --logout-bg:             #d97706;
+  --logout-bg-hover:       #b45309;
+  --logout-color:          #1a0c00;
+
+  /* Top decorative stripe */
+  --stripe-gradient:       linear-gradient(to right, #5c3208, #d97706, #fbbf24, #d97706, #5c3208);
+
+  /* Content area item hover */
+  --content-item-hover:    #3d1f00;
+
+  /* Icon button */
+  --icon-btn-bg:           rgba(217,119,6,0.10);
+  --icon-btn-border:       rgba(217,119,6,0.22);
+
+  /* Header shadow */
+  --header-shadow:         0 2px 10px rgba(180,120,0,0.18);
+
+  /* Search term highlight */
+  --search-highlight-bg:   #d97706;
+  --search-highlight-text: #fef3c7;
 }
+
+/* ══════════════════════════════════════════════════════════════
+   MIDNIGHT TEAL THEME
+   Deep midnight blue · peacock cyan · Pitambara gold
+   ══════════════════════════════════════════════════════════════ */
+[data-theme='krishna'] {
+  /* ── Base surfaces — Yamuna midnight ── */
+  --bg:               #060d1a;
+  --card:             #0c1b30;
+  --card-hover:       #112240;
+  --border:           #1a3a62;
+  --border-strong:    #22d3ee;   /* peacock teal */
+
+  /* ── Text — moonlit radiance ── */
+  --text:             #ddeeff;
+  --text-muted:       #6b9fc0;
+  --text-light:       #91bdd8;
+
+  /* ── Accents — Pitambara gold + peacock teal ── */
+  --accent:           #facc15;   /* vivid Pitambara gold */
+  --accent-deep:      #e6a800;
+
+  /* ── Buttons ── */
+  --btn-primary-from: #0891b2;   /* deep peacock cyan */
+  --btn-primary-to:   #facc15;   /* gold shimmer */
+  --btn-primary-text: #030a14;
+  --btn-dark-bg:      #0891b2;
+  --btn-dark-text:    #030a14;
+
+  /* ── Header — night sky gradient ── */
+  --header-bg:        linear-gradient(135deg, #030b17 0%, #071325 50%, #030c19 100%);
+  --header-text:      #facc15;
+  --header-border:    #22d3ee;
+
+  /* ── Sidebar ── */
+  --sidenav-bg:       #060d1a;
+  --sidenav-border:   #112240;
+  --sidenav-icon:     #22d3ee;
+  --sidenav-active:   #facc15;
+
+  /* ── Category panel ── */
+  --panel-bg:         #060d1a;
+  --panel-header-bg:  #0c1b30;
+  --panel-text:       #ddeeff;
+  --panel-hover:      #112240;
+
+  /* ── Reading area — light parchment for readability ── */
+  --reader-bg:        #eef5fc;
+  --reader-text:      #0d1b2a;
+  --reader-border:    #b8d4ec;
+
+  /* ── Inputs ── */
+  --input-bg:         #0c1b30;
+  --input-border:     #1a4578;
+  --input-text:       #ddeeff;
+  --input-placeholder:#3a7898;
+  --input-focus:      #22d3ee;
+
+  /* ── Modal ── */
+  --modal-overlay:    rgba(3, 9, 18, 0.80);
+  --modal-bg:         #0c1b30;
+  --modal-border:     #22d3ee;
+  --modal-text:       #ddeeff;
+  --modal-label:      #facc15;
+  --modal-input-bg:   #060d1a;
+  --modal-input-text: #ddeeff;
+  --modal-input-ring: #22d3ee;
+  --modal-success:    #34d399;
+  --modal-error:      #f87171;
+
+  /* ── Scrollbar ── */
+  --scrollbar-track:  #060d1a;
+  --scrollbar-thumb:  #1a4578;
+  --scrollbar-hover:  #22d3ee;
+
+  /* ── Misc ── */
+  --icon:             #22d3ee;
+  --cream:            #0c1b30;
+  --saffron:          #22d3ee;
+  --gold:             #facc15;
+  --deep-blue:        #ddeeff;
+  --soft-orange:      #112240;
+
+  /* ── Legacy vb- tokens ── */
+  --color-vb-header-top:          #030b17;
+  --color-vb-header-top-text:     #facc15;
+  --color-vb-header-bottom:       #22d3ee;
+  --color-vb-header-bottom-text:  #ddeeff;
+  --color-vb-body:                #070f1d;
+  --color-vb-normal-text:         #ddeeff;
+  --color-vb-input:               #0c1b30;
+  --color-vb-input-border:        #22d3ee;
+  --color-vb-input-text:          #ddeeff;
+  --color-vb-action-bg:           #0891b2;
+  --color-vb-action-border:       #facc15;
+  --color-vb-action-text:         #030a14;
+  --color-vb-dark:                #facc15;
+  --color-vb-contrast:            #112240;
+  --color-vb-link:                #facc15;
+
+  /* ── Search & content ── */
+  --search-bar-bg:           #0c1b30;
+  --book-content-bg:         #eef5fc;
+  --book-content-text:       #0d1b2a;
+  --book-content-text-light: #2a4a6b;
+
+  /* Panel header gradient & label color */
+  --panel-header-gradient: linear-gradient(135deg, #071325 0%, #0a1e3e 60%, #0891b2 100%);
+  --panel-header-color:    #ddeeff;
+
+  /* Header badge (pills, logo circle, user pill) */
+  --header-badge-bg:       rgba(34,211,238,0.08);
+  --header-badge-border:   rgba(34,211,238,0.30);
+
+  /* Logout button */
+  --logout-bg:             #0891b2;
+  --logout-bg-hover:       #22d3ee;
+  --logout-color:          #030a14;
+
+  /* Top decorative stripe */
+  --stripe-gradient:       linear-gradient(to right, #0891b2, #22d3ee, #facc15, #22d3ee, #0891b2);
+
+  /* Content area item hover (light reading bg) */
+  --content-item-hover:    #d0e8f5;
+
+  /* Icon button */
+  --icon-btn-bg:           rgba(34,211,238,0.10);
+  --icon-btn-border:       rgba(34,211,238,0.22);
+
+  /* Header shadow */
+  --header-shadow:         0 2px 10px rgba(34,211,238,0.12);
+
+  /* Search term highlight — vivid teal on light bg */
+  --search-highlight-bg:   #0891b2;
+  --search-highlight-text: #ffffff;
+}
+
+/* ── Krishna body: fixed radial depth ── */
+[data-theme='krishna'] body {
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(34, 211, 238, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(250, 204, 21, 0.05) 0%, transparent 50%),
+    linear-gradient(170deg, #060d1a 0%, #040b16 50%, #07101f 100%);
+  background-attachment: fixed;
+}
+
+/* ── Reading area stays light in Midnight Teal (book content only) ── */
+[data-theme='krishna'] .ebook-reader-book-content {
+  background: var(--book-content-bg) !important;
+  color: var(--book-content-text) !important;
+}
+
+/* ── Krishna buttons: gradient CTA ── */
+[data-theme='krishna'] .vb-btn-primary {
+  background: linear-gradient(135deg, #0891b2 0%, #6366f1 50%, #facc15 100%);
+  color: #030a14;
+  box-shadow: 0 4px 18px rgba(34, 211, 238, 0.30);
+}
+[data-theme='krishna'] .vb-btn-primary:hover {
+  box-shadow: 0 6px 28px rgba(34, 211, 238, 0.50);
+  filter: brightness(1.1);
+}
+
+/* ── Krishna dark button ── */
+[data-theme='krishna'] .vb-btn-dark {
+  background: linear-gradient(135deg, #0891b2 0%, #0ea5e9 100%);
+  color: #030a14;
+  box-shadow: 0 4px 14px rgba(34, 211, 238, 0.25);
+}
+
+/* ── Krishna icon buttons hover ── */
+[data-theme='krishna'] .icon-btn:hover {
+  background: linear-gradient(135deg, #0891b2, #6366f1);
+  color: #ddeeff;
+  border-color: #22d3ee;
+  box-shadow: 0 0 14px rgba(34, 211, 238, 0.45);
+}
+
+/* ── Krishna user badge ── */
+[data-theme='krishna'] .user-badge {
+  background: rgba(34, 211, 238, 0.12);
+  border-color: rgba(34, 211, 238, 0.30);
+}
+[data-theme='krishna'] .user-badge:hover {
+  background: linear-gradient(135deg, #0891b2, #facc15);
+  color: #030a14;
+  border-color: #facc15;
+}
+
+/* ── Krishna modal ── */
+[data-theme='krishna'] .vb-modal {
+  background: linear-gradient(145deg, #0c1b30 0%, #0a1628 100%);
+  border: 1px solid #22d3ee;
+  box-shadow:
+    0 0 0 1px rgba(34, 211, 238, 0.15),
+    0 30px 70px rgba(3, 9, 18, 0.80),
+    0 0 50px rgba(34, 211, 238, 0.08);
+}
+
+/* ── Krishna lotus divider ── */
+[data-theme='krishna'] .lotus-divider::before,
+[data-theme='krishna'] .lotus-divider::after {
+  background: linear-gradient(90deg, transparent, #22d3ee, transparent);
+}
+[data-theme='krishna'] .lotus-divider span {
+  color: #22d3ee;
+}
+
+/* ── Krishna verse / shloka block ── */
+[data-theme='krishna'] .verse {
+  border-left-color: #22d3ee;
+  background: rgba(34, 211, 238, 0.05);
+}
+
+/* ── Krishna category panel selected book ── */
+[data-theme='krishna'] .category-panel-book-btn.selected {
+  box-shadow: 0 0 0 2px #22d3ee;
+  background: rgba(34, 211, 238, 0.12) !important;
+}
+
+/* ── Krishna search highlight ── */
+[data-theme='krishna'] span[style*="background: #ffe066"] {
+  background: rgba(34, 211, 238, 0.35) !important;
+  color: #ddeeff !important;
+  border-radius: 0.25em;
+  padding: 0 2px;
+}
+
+/* ── Krishna: override hardcoded Tailwind yellow classes (tree/list items) ── */
+[data-theme='krishna'] .bg-yellow-50  { background-color: var(--card) !important; }
+[data-theme='krishna'] .bg-yellow-100 { background-color: var(--card) !important; }
+[data-theme='krishna'] .bg-yellow-200 { background-color: var(--card-hover) !important; }
+[data-theme='krishna'] .hover\:bg-yellow-100:hover { background-color: var(--card-hover) !important; }
+[data-theme='krishna'] .hover\:bg-yellow-200:hover { background-color: var(--card-hover) !important; }
+[data-theme='krishna'] .text-amber-900 { color: var(--text) !important; }
 
 /* ── System Theme: follow OS preference when data-theme='system' ── */
 /* JS resolves 'system' → 'dark'/'light' at runtime; this CSS block
@@ -347,13 +642,13 @@ body {
 .icon-btn {
   padding: 0.5rem;
   border-radius: 0.75rem;
-  background: rgba(251,191,36,0.12);
-  color: var(--header-text);
+  background: var(--icon-btn-bg);
+  color: var(--icon);
   transition: background 0.15s, color 0.15s, transform 0.15s;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid transparent;
+  border: 1px solid var(--icon-btn-border);
 }
 .icon-btn:hover, .icon-btn:focus {
   background: var(--accent);
@@ -364,8 +659,8 @@ body {
 
 /* User name badge */
 .user-badge {
-  background: rgba(251,191,36,0.15);
-  border: 1px solid rgba(251,191,36,0.35);
+  background: var(--icon-btn-bg);
+  border: 1px solid var(--icon-btn-border);
   border-radius: 0.75rem;
   padding: 0.375rem 1rem;
   font-weight: 600;

@@ -224,7 +224,7 @@ const CategoryPanel: React.FC<CategoryPanelProps & { bookChapters?: { text: stri
                         {rest.bookChapters.map((chapter, cidx) => (
                           <div
                             key={cidx}
-                            style={{ cursor: 'pointer', color: '#fbbf24', fontSize: '0.95em', padding: '2px 0' }}
+                            style={{ cursor: 'pointer', color: 'var(--accent)', fontSize: '0.95em', padding: '2px 0' }}
                             onClick={e => {
                               e.stopPropagation();
                               if (onChapterSelect) onChapterSelect(chapter.wordIndex + 1);
@@ -572,17 +572,17 @@ const CategoryPanel: React.FC<CategoryPanelProps & { bookChapters?: { text: stri
       <div
         className="px-4 py-3 category-panel-header flex items-center justify-between"
         style={{
-          background: 'linear-gradient(135deg, #b45309, #d97706)',
+          background: 'var(--panel-header-gradient)',
           borderBottom: '1px solid rgba(0,0,0,0.08)',
         }}
       >
-        <h3 className="text-sm font-bold" style={{ color: '#fef3c7', letterSpacing: '0.02em' }}>
+        <h3 className="text-sm font-bold" style={{ color: 'var(--panel-header-color)', letterSpacing: '0.02em' }}>
           {languageConfig[selectedLanguage as keyof typeof languageConfig].label} ({languageConfig[selectedLanguage as keyof typeof languageConfig].count})
         </h3>
         {onClose && (
           <button
             onClick={onClose}
-            style={{ color: 'rgba(254,243,199,0.8)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px', display: 'flex', alignItems: 'center', borderRadius: '0.25rem' }}
+            style={{ color: 'var(--panel-header-color)', opacity: 0.8, background: 'none', border: 'none', cursor: 'pointer', padding: '2px', display: 'flex', alignItems: 'center', borderRadius: '0.25rem' }}
             title="Close panel"
           >
             <X size={18} />
@@ -594,7 +594,7 @@ const CategoryPanel: React.FC<CategoryPanelProps & { bookChapters?: { text: stri
       <div
         className="flex"
         style={{
-          background: 'linear-gradient(135deg, #b45309, #d97706)',
+          background: 'var(--panel-header-gradient)',
         }}
       >
         {(['categories', 'authors', 'title'] as const).map(tab => (
@@ -603,8 +603,8 @@ const CategoryPanel: React.FC<CategoryPanelProps & { bookChapters?: { text: stri
             onClick={() => setActiveTab(tab)}
             className="flex-1 py-2 text-xs font-semibold tracking-wide"
             style={{
-              color: '#fef3c7',
-              borderBottom: activeTab === tab ? '2px solid #fef3c7' : '2px solid transparent',
+              color: 'var(--panel-header-color)',
+              borderBottom: activeTab === tab ? '2px solid var(--panel-header-color)' : '2px solid transparent',
               background: activeTab === tab ? 'rgba(0,0,0,0.18)' : 'transparent',
               textTransform: 'capitalize',
               opacity: activeTab === tab ? 1 : 0.8,
@@ -664,7 +664,7 @@ const CategoryPanel: React.FC<CategoryPanelProps & { bookChapters?: { text: stri
                   color: 'var(--text)',
                   '& .MuiTreeItem-label': { color: 'var(--text)', fontSize: '0.875rem' },
                   '& .MuiTreeItem-content': { '&:hover': { background: 'var(--card-hover)' } },
-                  '& .MuiTreeItem-iconContainer svg': { color: 'var(--accent-deep)' },
+                  '& .MuiTreeItem-iconContainer svg': { color: 'var(--sidenav-icon)' },
                 }}
               >
                 {renderTree(filteredTree)}

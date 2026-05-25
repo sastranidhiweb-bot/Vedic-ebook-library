@@ -94,9 +94,9 @@ const Header: React.FC<HeaderProps> = ({
     borderRadius: '999px',
     fontSize: '0.78rem',
     fontWeight: isActive ? 700 : 500,
-    border: `1.5px solid ${isActive ? '#b45309' : 'rgba(180,83,9,0.35)'}`,
-    background: isActive ? '#b45309' : 'rgba(180,83,9,0.06)',
-    color: isActive ? '#fef3c7' : 'var(--header-text)',
+    border: `1.5px solid ${isActive ? 'var(--btn-dark-bg)' : 'var(--header-badge-border)'}`,
+    background: isActive ? 'var(--btn-dark-bg)' : 'var(--header-badge-bg)',
+    color: isActive ? 'var(--btn-dark-text)' : 'var(--icon)',
     cursor: 'pointer',
     transition: 'all 0.15s',
     lineHeight: 1.5,
@@ -104,10 +104,10 @@ const Header: React.FC<HeaderProps> = ({
 
   return (
     <>
-      {/* ── Top gold stripe ─────────────────────────────────── */}
+      {/* ── Top decorative stripe ───────────────────────────────── */}
       <div style={{
         height: '3px',
-        background: 'linear-gradient(to right, #d97706, #fbbf24, #fde68a, #fbbf24, #d97706)',
+        background: 'var(--stripe-gradient)',
       }} />
 
       {/* ── Main header bar ─────────────────────────────────── */}
@@ -117,7 +117,7 @@ const Header: React.FC<HeaderProps> = ({
         style={{
           background: 'var(--header-bg)',
           borderBottom: '1px solid var(--header-border)',
-          boxShadow: '0 2px 10px rgba(180,120,0,0.12)',
+          boxShadow: 'var(--header-shadow)',
         }}
       >
         <div
@@ -129,8 +129,8 @@ const Header: React.FC<HeaderProps> = ({
             <div
               className="flex items-center justify-center rounded-full border flex-shrink-0"
               style={{
-                borderColor: 'rgba(180,83,9,0.3)',
-                background: 'rgba(180,83,9,0.06)',
+                borderColor: 'var(--header-badge-border)',
+                background: 'var(--header-badge-bg)',
                 width: 36,
                 height: 36,
               }}
@@ -239,9 +239,9 @@ const Header: React.FC<HeaderProps> = ({
                   borderRadius: '999px',
                   fontSize: '0.8rem',
                   fontWeight: 600,
-                  border: '1.5px solid rgba(180,83,9,0.35)',
-                  background: 'rgba(180,83,9,0.06)',
-                  color: 'var(--header-text)',
+                  border: '1.5px solid var(--header-badge-border)',
+                  background: 'var(--header-badge-bg)',
+                  color: 'var(--icon)',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
@@ -265,8 +265,8 @@ const Header: React.FC<HeaderProps> = ({
                   borderRadius: '999px',
                   fontSize: '0.8rem',
                   fontWeight: 600,
-                  background: '#b45309',
-                  color: '#fef3c7',
+                  background: 'var(--logout-bg)',
+                  color: 'var(--logout-color)',
                   border: 'none',
                   cursor: 'pointer',
                   transition: 'background 0.15s',
@@ -274,8 +274,8 @@ const Header: React.FC<HeaderProps> = ({
                   alignItems: 'center',
                   gap: '0.25rem',
                 }}
-                onMouseEnter={e => (e.currentTarget.style.background = '#92400e')}
-                onMouseLeave={e => (e.currentTarget.style.background = '#b45309')}
+                onMouseEnter={e => (e.currentTarget.style.background = 'var(--logout-bg-hover)')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'var(--logout-bg)')}
                 title="Logout"
               >
                 <span className="hidden sm:inline">Logout</span>

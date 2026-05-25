@@ -1,11 +1,12 @@
 "use client";
 import React, { createContext, useContext, useEffect, useState } from "react";
 
-export type ThemeMode = "dark" | "light" | "system";
+export type ThemeMode = "dark" | "light" | "system" | "krishna";
+type ResolvedTheme = "dark" | "light" | "krishna";
 
 interface ThemeContextType {
   theme: ThemeMode;
-  resolvedTheme: "dark" | "light";
+  resolvedTheme: ResolvedTheme;
   setTheme: (theme: ThemeMode) => void;
 }
 
@@ -24,17 +25,18 @@ function getSystemScheme(): "dark" | "light" {
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
-function resolveTheme(mode: ThemeMode): "dark" | "light" {
-  return mode === "system" ? getSystemScheme() : mode;
+function resolveTheme(mode: ThemeMode): ResolvedTheme {
+  if (mode === "system") return getSystemScheme();
+  return mode;
 }
 
-function applyToDOM(resolved: "dark" | "light") {
+function applyToDOM(resolved: ResolvedTheme) {
   document.body.setAttribute("data-theme", resolved);
 }
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setThemeState] = useState<ThemeMode>("system");
-  const [resolvedTheme, setResolvedTheme] = useState<"dark" | "light">("dark");
+  const [resolvedTheme, setResolvedTheme] = useState<ResolvedTheme>("dark");
 
   useEffect(() => {
     const saved = (localStorage.getItem(STORAGE_KEY) as ThemeMode | null) ?? "system";

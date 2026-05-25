@@ -101,6 +101,7 @@ const Settings: React.FC<SettingsProps> = ({ onClose }) => {
           >
             <option value="light">🌅 Light — Parchment</option>
             <option value="dark">🌙 Dark — Sandalwood Night</option>
+            <option value="krishna">🌊 Midnight Teal</option>
             <option value="system">💻 System — Follow OS</option>
           </select>
         </div>

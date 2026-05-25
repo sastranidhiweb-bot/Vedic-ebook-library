@@ -119,9 +119,9 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
     return context.replace(regex, (match) => {
       if (opts && opts.addIds && typeof opts.page === 'number') {
         const id = `search-match-${opts.page}-${matchIndex++}`;
-        return `<span id="${id}" style="background: #ffe066; color: #b45309; font-weight: bold; border-radius: 0.25em; padding: 0 2px;">${match}</span>`;
+        return `<span id="${id}" style="background: var(--search-highlight-bg); color: var(--search-highlight-text); font-weight: bold; border-radius: 0.25em; padding: 0 3px;">${match}</span>`;
       } else {
-        return `<span style="background: #ffe066; color: #b45309; font-weight: bold; border-radius: 0.25em; padding: 0 2px;">${match}</span>`;
+        return `<span style="background: var(--search-highlight-bg); color: var(--search-highlight-text); font-weight: bold; border-radius: 0.25em; padding: 0 3px;">${match}</span>`;
       }
     });
   }
@@ -1388,7 +1388,7 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
           <div className="flex-1 flex flex-col ebook-reader-content" style={{ background: 'var(--bg)', flex: 1, minHeight: 0, overflowY: 'auto' }}>
             {/* Search Bar */}
             {bookId && content && (
-              <div className="px-3 py-2 border-b border-amber-300 ebook-reader-searchbar" style={{ background: 'var(--search-bar-bg)' }}>
+              <div className="px-3 py-2 border-b ebook-reader-searchbar" style={{ background: 'var(--search-bar-bg)', borderColor: 'var(--border)' }}>
                 <div className="flex flex-col sm:flex-row gap-2">
                   <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2" size={16} style={{ color: 'var(--icon)' }} />
@@ -1398,15 +1398,15 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
                       onChange={handleSearchChange}
                       onKeyDown={handleSearchKeyDown}
                       placeholder={`Search in "${displayTitle}"...`}
-                      className="w-full pl-9 pr-4 py-2 border border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent search-input text-sm"
-                      style={{ background: 'var(--search-bar-bg)', color: 'var(--book-content-text)' }}
+                      className="w-full pl-9 pr-4 py-2 rounded-lg search-input text-sm"
+                      style={{ background: 'var(--search-bar-bg)', color: 'var(--input-text)', border: '1px solid var(--input-border)', outline: 'none' }}
                     />
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
                     <button
                       onClick={handleSearchSubmit}
-                      className="px-3 py-2 rounded-lg font-semibold border border-amber-400 transition-colors text-sm"
-                      style={{ background: 'var(--color-vb-action-bg, #0f766e)', color: 'var(--color-vb-action-text, #fff)' }}
+                      className="px-3 py-2 rounded-lg font-semibold transition-colors text-sm"
+                      style={{ background: 'var(--btn-dark-bg)', color: 'var(--btn-dark-text)', border: '1px solid var(--border-strong)' }}
                       title="Search this book"
                     >
                       Search
@@ -1415,19 +1415,25 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
                     {/* Search Results Navigation */}
                     {showSearchResults && searchResults.length > 0 && (
                       <div className="flex items-center gap-1">
-                        <span className="text-xs text-amber-800 whitespace-nowrap">
+                        <span className="text-xs whitespace-nowrap" style={{ color: 'var(--text-light)' }}>
                           {currentSearchIndex + 1}/{searchResults.length}
                         </span>
                         <button
                           onClick={goToPreviousSearchResult}
-                          className="p-1 hover:bg-amber-200 rounded text-amber-700"
+                          className="p-1 rounded"
+                          style={{ color: 'var(--accent)' }}
+                          onMouseEnter={e => (e.currentTarget.style.background = 'var(--card)')}
+                          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                           disabled={searchResults.length <= 1}
                         >
                           <ChevronLeft size={14} />
                         </button>
                         <button
                           onClick={goToNextSearchResult}
-                          className="p-1 hover:bg-amber-200 rounded text-amber-700"
+                          className="p-1 rounded"
+                          style={{ color: 'var(--accent)' }}
+                          onMouseEnter={e => (e.currentTarget.style.background = 'var(--card)')}
+                          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                           disabled={searchResults.length <= 1}
                         >
                           <ChevronRight size={14} />
@@ -1439,7 +1445,7 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
 
                 {/* Search Results Summary */}
                 {showSearchResults && (
-                  <div className="mt-1 text-xs text-amber-800">
+                  <div className="mt-1 text-xs" style={{ color: 'var(--text-light)' }}>
                     {searchResults.length > 0 ? `Found ${searchResults.length} matches` : searchQuery && 'No matches found'}
                   </div>
                 )}
@@ -1452,16 +1458,40 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
               <div className="flex flex-col flex-1 overflow-hidden">
                 {/* Search Results Display */}
                 {isSearchMode && searchResults.length > 0 && (
-                  <div className="flex-1 overflow-auto flex flex-col bg-amber-50" style={{borderRadius: '0.75rem', boxShadow: '0 2px 16px 0 rgba(0,0,0,0.04)', border: '1.5px solid #ffe066', margin: '1.5rem', minHeight: 0}}>
-                    <div className="p-4 bg-amber-100 border-b border-amber-200 flex items-center justify-between sticky top-0 z-40">
-                      <div>
-                        <h3 className="font-semibold text-amber-800 text-lg">Search Results</h3>
-                        <p className="text-sm text-amber-700">
-                          Found {searchResults.length} matches for "{searchQuery}"
+                  <div className="flex-1 flex flex-col overflow-hidden" style={{ background: 'var(--book-content-bg)', minHeight: 0 }}>
+                    {/* Results Header */}
+                    <div
+                      className="flex items-center justify-between px-6 py-4 flex-shrink-0 sticky top-0 z-40"
+                      style={{
+                        background: 'var(--header-bg)',
+                        borderBottom: '2px solid var(--header-border)',
+                      }}
+                    >
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <span className="font-bold text-base tracking-wide" style={{ color: 'var(--header-text)' }}>
+                            Search Results
+                          </span>
+                          <span
+                            className="text-xs font-semibold px-2 py-0.5 rounded-full"
+                            style={{ background: 'var(--accent)', color: 'var(--btn-primary-text)' }}
+                          >
+                            {searchResults.length} matches
+                          </span>
+                        </div>
+                        <p className="text-xs mt-1 truncate" style={{ color: 'var(--accent-deep)', opacity: 0.9 }}>
+                          for{' '}
+                          <span className="font-semibold italic" style={{ color: 'var(--accent)' }}>
+                            &ldquo;{searchQuery}&rdquo;
+                          </span>
                           {searchResults.length > 0 && (
-                            <span className="text-xs text-amber-600 ml-2">
-                              (Pages: {[...new Set(searchResults.map(r => r.pageIndex + 1))].sort((a, b) => a - b).slice(0, 20).join(', ')}
-                              {[...new Set(searchResults.map(r => r.pageIndex + 1))].length > 20 ? '...' : ''})
+                            <span className="ml-2 opacity-70">
+                              · Pages:{' '}
+                              {[...new Set(searchResults.map(r => r.pageIndex + 1))]
+                                .sort((a, b) => a - b)
+                                .slice(0, 15)
+                                .join(', ')}
+                              {[...new Set(searchResults.map(r => r.pageIndex + 1))].length > 15 ? '…' : ''}
                             </span>
                           )}
                         </p>
@@ -1474,14 +1504,20 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
                           setSearchResults([]);
                           setShowSearchResults(false);
                         }}
-                        className="text-amber-600 hover:text-amber-800 p-2 text-xl font-bold rounded-full border border-amber-300 bg-white shadow"
+                        className="flex-shrink-0 ml-4 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-opacity hover:opacity-80"
+                        style={{
+                          color: 'var(--header-text)',
+                          border: '1px solid var(--header-border)',
+                          background: 'rgba(255,255,255,0.08)',
+                        }}
                         title="Close search"
                       >
-                        ✕
+                        ✕ Close
                       </button>
                     </div>
-                    <div className="flex-1 overflow-y-auto p-8 space-y-8">
-                      {/* Group search results by paragraphIndex */}
+
+                    {/* Results List */}
+                    <div className="flex-1 overflow-y-auto" style={{ background: 'var(--book-content-bg)' }}>
                       {Object.entries(
                         searchResults.reduce((acc, result) => {
                           const key = result.paragraphIndex ?? `no-paragraph-${result.pageIndex}`;
@@ -1489,55 +1525,88 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
                           acc[key].push(result);
                           return acc;
                         }, {} as Record<string, typeof searchResults>)
-                      ).map(([paragraphKey, group], groupIdx) => (
-                        <div
-                          key={paragraphKey}
-                          className="p-10 rounded-2xl shadow-lg border-2 transition-colors cursor-pointer bg-white border-amber-200 hover:border-amber-400 hover:shadow-2xl"
-                          style={{ fontSize: '1.5rem', lineHeight: 2.1 }}
-                        >
-                          {/* Book name and paragraph info */}
-                          <div className="flex items-center justify-between mb-4">
-                            <span className="text-lg font-semibold text-amber-700">
-                              {bookTitle || title} — Page {group[0].pageIndex + 1}
-                            </span>
-                            <span className="text-lg text-amber-500">
-                              Paragraph {group[0].paragraphIndex !== undefined ? group[0].paragraphIndex + 1 : '?'}
-                            </span>
-                          </div>
-                          {/* Show only the context line for single match, or multiple lines for multiple matches */}
-                          {group.length === 1 ? (
-                            <div
-                              className="mb-4 cursor-pointer hover:bg-amber-100 rounded"
-                              onClick={() => {
-                                setCurrentPage(group[0].pageIndex + 1);
-                                setPageInputValue((group[0].pageIndex + 1).toString());
-                                setLastSearchWord(group[0].match || searchQuery);
-                                setSearchQuery(group[0].match || searchQuery);
-                                setIsSearchMode(false);
-                                setSearchResults([]);
-                              }}
-                            >
-                              <span className="block text-sm text-amber-600 mb-1">Match {searchResults.indexOf(group[0]) + 1}</span>
-                              <p className="text-2xl text-gray-900 leading-relaxed" style={{fontWeight: 400}} dangerouslySetInnerHTML={{__html: highlightSearchWord(group[0].context, group[0].match || searchQuery)}} />
+                      ).map(([paragraphKey, group], groupIdx, arr) => (
+                        <div key={paragraphKey}>
+                          {/* Result Row */}
+                          <div
+                            className="px-6 py-4 cursor-pointer transition-colors"
+                            style={{ background: 'transparent' }}
+                            onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'var(--content-item-hover)'; }}
+                            onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
+                            onClick={() => {
+                              setCurrentPage(group[0].pageIndex + 1);
+                              setPageInputValue((group[0].pageIndex + 1).toString());
+                              setLastSearchWord(group[0].match || searchQuery);
+                              setSearchQuery(group[0].match || searchQuery);
+                              setIsSearchMode(false);
+                              setSearchResults([]);
+                            }}
+                          >
+                            {/* Metadata row */}
+                            <div className="flex items-center gap-2 mb-2 flex-wrap">
+                              <span
+                                className="text-xs font-bold px-2 py-0.5 rounded"
+                                style={{
+                                  background: 'var(--accent)',
+                                  color: 'var(--btn-primary-text)',
+                                  letterSpacing: '0.04em',
+                                }}
+                              >
+                                Page {group[0].pageIndex + 1}
+                              </span>
+                              <span className="text-xs font-medium" style={{ color: 'var(--book-content-text-light)' }}>
+                                {bookTitle || title}
+                              </span>
+                              <span className="text-xs" style={{ color: 'var(--book-content-text-light)', opacity: 0.7 }}>
+                                · §{group[0].paragraphIndex !== undefined ? group[0].paragraphIndex + 1 : '?'}
+                              </span>
+                              <span className="text-xs ml-auto" style={{ color: 'var(--book-content-text-light)', opacity: 0.7 }}>
+                                {group.length > 1
+                                  ? `${group.length} matches in paragraph`
+                                  : `Match ${searchResults.indexOf(group[0]) + 1}`}
+                              </span>
                             </div>
-                          ) : (
-                            group.map((result, idx) => (
+
+                            {/* Match texts */}
+                            {group.map((result, idx) => (
                               <div
                                 key={idx}
-                                className="mb-4 cursor-pointer hover:bg-amber-100 rounded"
-                                onClick={() => {
+                                className={idx > 0 ? 'mt-3 pt-3' : ''}
+                                style={idx > 0 ? { borderTop: '1px dashed var(--reader-border)' } : {}}
+                                onClick={group.length > 1 ? (e) => {
+                                  e.stopPropagation();
                                   setCurrentPage(result.pageIndex + 1);
                                   setPageInputValue((result.pageIndex + 1).toString());
                                   setLastSearchWord(result.match || searchQuery);
                                   setSearchQuery(result.match || searchQuery);
                                   setIsSearchMode(false);
                                   setSearchResults([]);
-                                }}
+                                } : undefined}
                               >
-                                <span className="block text-sm text-amber-600 mb-1">Match {searchResults.indexOf(result) + 1}</span>
-                                <p className="text-2xl text-gray-900 leading-relaxed" style={{fontWeight: 400}} dangerouslySetInnerHTML={{__html: highlightSearchWord(result.context, result.match || searchQuery)}} />
+                                {group.length > 1 && (
+                                  <span className="text-xs mb-1 block" style={{ color: 'var(--book-content-text-light)', opacity: 0.7 }}>
+                                    Match {searchResults.indexOf(result) + 1}
+                                  </span>
+                                )}
+                                <p
+                                  className="leading-relaxed"
+                                  style={{ fontSize: '0.97rem', color: 'var(--book-content-text)', fontWeight: 400, lineHeight: 1.75 }}
+                                  dangerouslySetInnerHTML={{ __html: highlightSearchWord(result.context, result.match || searchQuery) }}
+                                />
                               </div>
-                            ))
+                            ))}
+                          </div>
+
+                          {/* Divider */}
+                          {groupIdx < arr.length - 1 && (
+                            <div
+                              style={{
+                                height: '1px',
+                                background: 'var(--border)',
+                                margin: '0 1.5rem',
+                                opacity: 0.6,
+                              }}
+                            />
                           )}
                         </div>
                       ))}
@@ -1549,7 +1618,7 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
                 {!isSearchMode && (
                   <div className="flex flex-col flex-1 overflow-hidden">
                     {/* Reading Controls */}
-                    <div className="border-b border-gray-200 px-3 py-2 flex-shrink-0">
+                    <div className="border-b px-3 py-2 flex-shrink-0" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2 min-w-0">
                           {/* Mobile: toggle category panel */}
@@ -1558,8 +1627,8 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
                             onClick={toggleCategoryPanel}
                             title="Browse Library"
                             style={{
-                              color: isCategoryPanelVisible ? '#fef3c7' : 'var(--text)',
-                              background: isCategoryPanelVisible ? '#b45309' : 'var(--card)',
+                              color: isCategoryPanelVisible ? 'var(--btn-dark-text)' : 'var(--text)',
+                              background: isCategoryPanelVisible ? 'var(--btn-dark-bg)' : 'var(--card-hover)',
                               border: '1px solid var(--border)',
                             }}
                           >
@@ -1567,23 +1636,29 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
                             Library
                           </button>
                           <BookOpen className="w-4 h-4 hidden md:block flex-shrink-0" style={{ color: 'var(--icon)' }} />
-                          <span className="font-bold text-sm sm:text-base truncate" style={{ color: 'var(--book-content-text-light)' }}>{title}</span>
+                          <span className="font-bold text-sm sm:text-base truncate" style={{ color: 'var(--text-light)' }}>{title}</span>
                         </div>
 
                         <div className="flex items-center gap-1 flex-shrink-0">
                           <button
                             onClick={decreaseFontSize}
-                            className="p-2 rounded-lg hover:bg-gray-100 transition-colors text-gray-600"
+                            className="p-2 rounded-lg transition-colors"
+                            style={{ color: 'var(--text-muted)' }}
+                            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--card-hover)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--text)'; }}
+                            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-muted)'; }}
                             title="Decrease font size"
                           >
                       
                           </button>
                           
-                          <span className="text-sm px-2 font-semibold" style={{ color: 'var(--book-content-text-light)' }}>{fontSize}px</span>
+                          <span className="text-sm px-2 font-semibold" style={{ color: 'var(--text-light)' }}>{fontSize}px</span>
                           
                           <button
                             onClick={increaseFontSize}
-                            className="p-2 rounded-lg hover:bg-gray-100 transition-colors text-gray-600"
+                            className="p-2 rounded-lg transition-colors"
+                            style={{ color: 'var(--text-muted)' }}
+                            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--card-hover)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--text)'; }}
+                            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-muted)'; }}
                             title="Increase font size"
                           >
                             
@@ -1591,11 +1666,11 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
                           
                           <button
                             onClick={toggleBookmark}
-                            className={`p-2 rounded-lg transition-colors ${
-                              isBookmarked 
-                                ? 'text-yellow-600 bg-yellow-100' 
-                                : 'text-gray-600 hover:bg-gray-100'
-                            }`}
+                            className="p-2 rounded-lg transition-colors"
+                            style={isBookmarked
+                              ? { color: 'var(--accent)', background: 'var(--card-hover)' }
+                              : { color: 'var(--text-muted)' }
+                            }
                             title={isBookmarked ? 'Remove bookmark' : 'Bookmark this page'}
                           >
                             {isBookmarked ? (
@@ -1606,15 +1681,14 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
                           </button>
                           
                           {/* Page Navigation */}
-                          <div className="flex items-center gap-0.5 border-l border-gray-300 pl-2 ml-1">
+                          <div className="flex items-center gap-0.5 pl-2 ml-1" style={{ borderLeft: '1px solid var(--border)' }}>
                             <button
                               onClick={goToPreviousPage}
                               disabled={currentPage === 1}
-                              className={`p-2 rounded-lg transition-colors ${
-                                currentPage === 1 
-                                  ? 'text-gray-400 cursor-not-allowed' 
-                                  : 'text-gray-600 hover:bg-gray-100'
-                              }`}
+                              className="p-2 rounded-lg transition-colors"
+                              style={{ color: currentPage === 1 ? 'var(--text-muted)' : 'var(--text-light)', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', opacity: currentPage === 1 ? 0.4 : 1 }}
+                              onMouseEnter={e => { if (currentPage !== 1) { (e.currentTarget as HTMLButtonElement).style.background = 'var(--card-hover)'; } }}
+                              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
                               title="Previous page"
                             >
                               <ChevronLeft className="w-4 h-4" />
@@ -1629,19 +1703,19 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
                                 onBlur={handlePageInputBlur}
                                 min={1}
                                 max={totalPages}
-                                className="w-12 text-sm text-center border border-gray-300 rounded px-1 py-0.5 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                                className="w-12 text-sm text-center rounded px-1 py-0.5 focus:outline-none"
+                                style={{ border: '1px solid var(--border)', background: 'var(--input-bg)', color: 'var(--text)' }}
                               />
-                              <span className="text-sm" style={{ color: 'var(--book-content-text-light)' }}>/ {totalPages}</span>
+                              <span className="text-sm" style={{ color: 'var(--text-muted)' }}>/ {totalPages}</span>
                             </div>
                             
                             <button
                               onClick={goToNextPage}
                               disabled={currentPage >= totalPages}
-                              className={`p-2 rounded-lg transition-colors ${
-                                currentPage >= totalPages 
-                                  ? 'text-gray-400 cursor-not-allowed' 
-                                  : 'text-gray-600 hover:bg-gray-100'
-                              }`}
+                              className="p-2 rounded-lg transition-colors"
+                              style={{ color: currentPage >= totalPages ? 'var(--text-muted)' : 'var(--text-light)', cursor: currentPage >= totalPages ? 'not-allowed' : 'pointer', opacity: currentPage >= totalPages ? 0.4 : 1 }}
+                              onMouseEnter={e => { if (currentPage < totalPages) { (e.currentTarget as HTMLButtonElement).style.background = 'var(--card-hover)'; } }}
+                              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
                               title="Next page"
                             >
                               <ChevronRight className="w-4 h-4" />
@@ -1720,7 +1794,7 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
               <div className="flex-1 overflow-y-auto" style={{ background: 'var(--bg)' }}>
                 {/* Banner */}
                 <div style={{
-                  background: 'linear-gradient(135deg, #7c4a12, #a16207)',
+                  background: 'var(--panel-header-gradient)',
                   padding: '1.5rem',
                   display: 'flex',
                   alignItems: 'flex-start',
@@ -1728,19 +1802,19 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
                 }}>
                   <div style={{
                     width: 44, height: 44, borderRadius: '50%', flexShrink: 0,
-                    background: 'rgba(251,191,36,0.12)',
-                    border: '1.5px solid rgba(251,191,36,0.35)',
+                    background: 'var(--header-badge-bg)',
+                    border: '1.5px solid var(--header-badge-border)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: '#fbbf24', fontSize: '1.2rem',
+                    color: 'var(--accent)', fontSize: '1.2rem',
                   }}>✦</div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <h2 style={{ color: '#fef3c7', fontSize: '1.2rem', fontWeight: 700, marginBottom: '0.35rem', fontFamily: '"Noto Serif Devanagari", Georgia, serif' }}>
+                    <h2 style={{ color: 'var(--panel-header-color)', fontSize: '1.2rem', fontWeight: 700, marginBottom: '0.35rem', fontFamily: '"Noto Serif Devanagari", Georgia, serif' }}>
                       Welcome to Your Vedic Library
                     </h2>
-                    <p style={{ color: 'rgba(254,243,199,0.78)', fontSize: '0.82rem', lineHeight: 1.6 }}>
+                    <p style={{ color: 'var(--panel-header-color)', opacity: 0.78, fontSize: '0.82rem', lineHeight: 1.6 }}>
                       Browse sacred Śruti &amp; Smṛti literature. Select a text from the categories to begin your study.
                     </p>
-                    <p style={{ color: '#fbbf24', fontSize: '0.78rem', marginTop: '0.5rem', fontStyle: 'italic', opacity: 0.9 }}>
+                    <p style={{ color: 'var(--accent)', fontSize: '0.78rem', marginTop: '0.5rem', fontStyle: 'italic', opacity: 0.9 }}>
                       ॥ सा विद्या या विमुक्तये ॥
                     </p>
                     {/* Mobile: open category panel button */}
@@ -1754,8 +1828,8 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
                           gap: '0.4rem',
                           padding: '0.5rem 1.1rem',
                           borderRadius: '999px',
-                          background: '#fbbf24',
-                          color: '#78350f',
+                          background: 'var(--accent)',
+                          color: 'var(--btn-primary-text)',
                           fontWeight: 700,
                           fontSize: '0.85rem',
                           border: 'none',
@@ -1814,7 +1888,7 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
                             padding: '0.75rem 1rem',
                             background: 'var(--card)',
                             border: '1px solid var(--border)',
-                            borderLeft: '3px solid #b45309',
+                            borderLeft: '3px solid var(--accent-deep)',
                             borderRadius: '0.5rem',
                             cursor: 'pointer',
                             textAlign: 'left',
@@ -1834,9 +1908,9 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
                             fontSize: '0.7rem', fontWeight: 600,
                             padding: '0.15rem 0.55rem',
                             borderRadius: '999px',
-                            background: 'rgba(180,83,9,0.1)',
-                            border: '1px solid rgba(180,83,9,0.3)',
-                            color: '#92400e',
+                            background: 'var(--header-badge-bg)',
+                            border: '1px solid var(--header-badge-border)',
+                            color: 'var(--text-light)',
                             flexShrink: 0,
                             marginLeft: '0.75rem',
                           }}>Śruti</span>
