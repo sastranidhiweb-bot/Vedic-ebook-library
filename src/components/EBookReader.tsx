@@ -1399,13 +1399,18 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
                       onKeyDown={handleSearchKeyDown}
                       placeholder={`Search in "${displayTitle}"...`}
                       className="w-full pl-9 pr-4 py-2 rounded-lg search-input text-sm"
-                      style={{ background: 'var(--search-bar-bg)', color: 'var(--input-text)', border: '1px solid var(--input-border)', outline: 'none' }}
+                      style={{
+                        background: 'var(--search-input-bg, var(--search-bar-bg))',
+                        color: 'var(--search-input-text, var(--input-text))',
+                        border: '1px solid var(--search-input-border, var(--input-border))',
+                        outline: 'none'
+                      }}
                     />
                   </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
+                  <div className="flex items-center gap-2 flex-shrink-0 w-full sm:w-auto">
                     <button
                       onClick={handleSearchSubmit}
-                      className="px-3 py-2 rounded-lg font-semibold transition-colors text-sm"
+                      className="reader-search-submit px-3 py-2 rounded-lg font-semibold transition-colors text-sm w-full sm:w-auto"
                       style={{ background: 'var(--btn-dark-bg)', color: 'var(--btn-dark-text)', border: '1px solid var(--border-strong)' }}
                       title="Search this book"
                     >
@@ -1458,7 +1463,7 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
               <div className="flex flex-col flex-1 overflow-hidden">
                 {/* Search Results Display */}
                 {isSearchMode && searchResults.length > 0 && (
-                  <div className="flex-1 flex flex-col overflow-hidden" style={{ background: 'var(--book-content-bg)', minHeight: 0 }}>
+                  <div className="flex-1 flex flex-col overflow-hidden" style={{ background: 'var(--reader-bg)', minHeight: 0 }}>
                     {/* Results Header */}
                     <div
                       className="flex items-center justify-between px-6 py-4 flex-shrink-0 sticky top-0 z-40"
@@ -1517,7 +1522,7 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
                     </div>
 
                     {/* Results List */}
-                    <div className="flex-1 overflow-y-auto" style={{ background: 'var(--book-content-bg)' }}>
+                    <div className="flex-1 overflow-y-auto" style={{ background: 'var(--reader-bg)' }}>
                       {Object.entries(
                         searchResults.reduce((acc, result) => {
                           const key = result.paragraphIndex ?? `no-paragraph-${result.pageIndex}`;
@@ -1619,7 +1624,7 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
                   <div className="flex flex-col flex-1 overflow-hidden">
                     {/* Reading Controls */}
                     <div className="border-b px-3 py-2 flex-shrink-0" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
-                      <div className="flex items-center justify-between gap-2">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 min-w-0">
                         <div className="flex items-center gap-2 min-w-0">
                           {/* Mobile: toggle category panel */}
                           <button
@@ -1635,53 +1640,60 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
                             <BookOpen className="w-3.5 h-3.5" />
                             Library
                           </button>
-                          <BookOpen className="w-4 h-4 hidden md:block flex-shrink-0" style={{ color: 'var(--icon)' }} />
+                          <BookOpen
+                            className="w-4 h-4 hidden md:block flex-shrink-0"
+                            style={{ color: 'var(--text-light)', marginTop: '1px' }}
+                          />
                           <span className="font-bold text-sm sm:text-base truncate" style={{ color: 'var(--text-light)' }}>{title}</span>
                         </div>
 
-                        <div className="flex items-center gap-1 flex-shrink-0">
-                          <button
-                            onClick={decreaseFontSize}
-                            className="p-2 rounded-lg transition-colors"
-                            style={{ color: 'var(--text-muted)' }}
-                            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--card-hover)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--text)'; }}
-                            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-muted)'; }}
-                            title="Decrease font size"
-                          >
-                      
-                          </button>
-                          
-                          <span className="text-sm px-2 font-semibold" style={{ color: 'var(--text-light)' }}>{fontSize}px</span>
-                          
-                          <button
-                            onClick={increaseFontSize}
-                            className="p-2 rounded-lg transition-colors"
-                            style={{ color: 'var(--text-muted)' }}
-                            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--card-hover)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--text)'; }}
-                            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-muted)'; }}
-                            title="Increase font size"
-                          >
-                            
-                          </button>
-                          
-                          <button
-                            onClick={toggleBookmark}
-                            className="p-2 rounded-lg transition-colors"
-                            style={isBookmarked
-                              ? { color: 'var(--accent)', background: 'var(--card-hover)' }
-                              : { color: 'var(--text-muted)' }
-                            }
-                            title={isBookmarked ? 'Remove bookmark' : 'Bookmark this page'}
-                          >
-                            {isBookmarked ? (
-                              <BookmarkCheck className="w-4 h-4" />
-                            ) : (
-                              <Bookmark className="w-4 h-4" />
-                            )}
-                          </button>
-                          
+                        <div className="w-full sm:w-auto flex flex-col sm:flex-row sm:items-center gap-2 flex-shrink-0">
+                          <div className="flex items-center justify-between sm:justify-start gap-2">
+                            <div className="flex items-center gap-0.5 rounded-lg px-1 py-0.5" style={{ background: 'var(--bg)', border: '1px solid var(--border)' }}>
+                              <button
+                                onClick={decreaseFontSize}
+                                className="px-2 py-1 rounded-md transition-colors text-xs font-semibold"
+                                style={{ color: 'var(--text-muted)' }}
+                                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--card-hover)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--text)'; }}
+                                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-muted)'; }}
+                                title="Decrease font size"
+                              >
+                                A-
+                              </button>
+
+                              <span className="text-xs sm:text-sm px-1.5 sm:px-2 font-semibold whitespace-nowrap" style={{ color: 'var(--text-light)' }}>{fontSize}px</span>
+
+                              <button
+                                onClick={increaseFontSize}
+                                className="px-2 py-1 rounded-md transition-colors text-xs font-semibold"
+                                style={{ color: 'var(--text-muted)' }}
+                                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--card-hover)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--text)'; }}
+                                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-muted)'; }}
+                                title="Increase font size"
+                              >
+                                A+
+                              </button>
+                            </div>
+
+                            <button
+                              onClick={toggleBookmark}
+                              className="p-2 rounded-lg transition-colors"
+                              style={isBookmarked
+                                ? { color: 'var(--accent)', background: 'var(--card-hover)' }
+                                : { color: 'var(--text-muted)', background: 'var(--bg)', border: '1px solid var(--border)' }
+                              }
+                              title={isBookmarked ? 'Remove bookmark' : 'Bookmark this page'}
+                            >
+                              {isBookmarked ? (
+                                <BookmarkCheck className="w-4 h-4" />
+                              ) : (
+                                <Bookmark className="w-4 h-4" />
+                              )}
+                            </button>
+                          </div>
+
                           {/* Page Navigation */}
-                          <div className="flex items-center gap-0.5 pl-2 ml-1" style={{ borderLeft: '1px solid var(--border)' }}>
+                          <div className="flex items-center justify-center gap-0.5 rounded-lg px-1 py-0.5" style={{ background: 'var(--bg)', border: '1px solid var(--border)' }}>
                             <button
                               onClick={goToPreviousPage}
                               disabled={currentPage === 1}
@@ -1693,8 +1705,8 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
                             >
                               <ChevronLeft className="w-4 h-4" />
                             </button>
-                            
-                            <div className="flex items-center space-x-1 min-w-[4rem] text-center">
+
+                            <div className="flex items-center space-x-1 min-w-0 text-center">
                               <input
                                 type="number"
                                 value={pageInputValue}
@@ -1703,12 +1715,12 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
                                 onBlur={handlePageInputBlur}
                                 min={1}
                                 max={totalPages}
-                                className="w-12 text-sm text-center rounded px-1 py-0.5 focus:outline-none"
+                                className="w-11 sm:w-12 text-xs sm:text-sm text-center rounded px-1 py-0.5 focus:outline-none"
                                 style={{ border: '1px solid var(--border)', background: 'var(--input-bg)', color: 'var(--text)' }}
                               />
-                              <span className="text-sm" style={{ color: 'var(--text-muted)' }}>/ {totalPages}</span>
+                              <span className="text-xs sm:text-sm whitespace-nowrap" style={{ color: 'var(--text-muted)' }}>/ {totalPages}</span>
                             </div>
-                            
+
                             <button
                               onClick={goToNextPage}
                               disabled={currentPage >= totalPages}

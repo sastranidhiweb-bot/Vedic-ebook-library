@@ -113,7 +113,7 @@ const Header: React.FC<HeaderProps> = ({
       {/* ── Main header bar ─────────────────────────────────── */}
       <header
         ref={headerRef}
-        className="px-3 flex-shrink-0 relative"
+        className="px-3 flex-shrink-0 relative overflow-x-clip"
         style={{
           background: 'var(--header-bg)',
           borderBottom: '1px solid var(--header-border)',
@@ -121,11 +121,11 @@ const Header: React.FC<HeaderProps> = ({
         }}
       >
         <div
-          className="max-w-screen-2xl mx-auto flex items-center gap-2"
+          className="max-w-screen-2xl mx-auto flex items-center gap-2 min-w-0"
           style={{ minHeight: '52px' }}
         >
           {/* ── Brand ─────────────────────────────────────────── */}
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-2 min-w-0">
             <div
               className="flex items-center justify-center rounded-full border flex-shrink-0"
               style={{
@@ -137,9 +137,9 @@ const Header: React.FC<HeaderProps> = ({
             >
               <ISKCONLogo size={26} />
             </div>
-            <div>
+            <div className="min-w-0">
               <h1
-                className="font-bold leading-tight tracking-wide"
+                className="font-bold leading-tight tracking-wide truncate max-w-[9.75rem] sm:max-w-none"
                 style={{
                   color: 'var(--header-text)',
                   fontSize: '0.95rem',
@@ -182,7 +182,7 @@ const Header: React.FC<HeaderProps> = ({
           )}
 
           {/* ── Right controls ───────────────────────────────── */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 flex-shrink-0">
 
             {/* Zoom controls — desktop only */}
             {onZoomIn && (
@@ -234,6 +234,7 @@ const Header: React.FC<HeaderProps> = ({
               <button
                 onClick={() => setShowProfile(true)}
                 title="My Profile"
+                className="hidden sm:flex"
                 style={{
                   padding: '0.2rem 0.6rem',
                   borderRadius: '999px',
@@ -285,7 +286,7 @@ const Header: React.FC<HeaderProps> = ({
 
             {/* Mobile hamburger — shows extra controls */}
             <button
-              className="md:hidden icon-btn"
+              className="md:hidden icon-btn header-mobile-menu-btn"
               onClick={() => setShowMobileMenu(v => !v)}
               title="More options"
               style={{ width: 32, height: 32 }}

@@ -93,13 +93,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(userData);
     setToken(userToken);
     setIsAuthenticated(true);
-    // Set theme and font size per user
+    // Theme is managed by ThemeProvider via vedic_theme localStorage.
+    // Avoid overriding data-theme here, otherwise selected UI theme and applied colors can drift.
     if (typeof window !== 'undefined') {
-      const theme = userData?.profile?.preferences?.theme || 'dark';
       const fontSizePref = userData?.profile?.preferences?.fontSize;
+      const storedFontSize = localStorage.getItem('vedic_font_size');
       const fontSize = fontSizePref === 'small' ? '14px' : fontSizePref === 'large' ? '18px' : '16px';
-      document.body.setAttribute('data-theme', theme);
-      document.body.style.fontSize = fontSize;
+      document.documentElement.style.fontSize = storedFontSize === 'small'
+        ? '14px'
+        : storedFontSize === 'large'
+          ? '18px'
+          : fontSize;
+
+      // Backfill theme storage from server preference only if no local theme exists yet.
+      if (!localStorage.getItem('vedic_theme')) {
+        const serverTheme = userData?.profile?.preferences?.theme;
+        if (serverTheme === 'light' || serverTheme === 'dark' || serverTheme === 'krishna' || serverTheme === 'system') {
+          localStorage.setItem('vedic_theme', serverTheme);
+        }
+      }
     }
   };
 
@@ -110,10 +122,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     sessionStorage.removeItem('vedic_auth_token');
     sessionStorage.removeItem('vedic_user');
 
-    // Optionally reset theme/font size to default
+    // Keep chosen theme/font size persistent across sessions.
     if (typeof window !== 'undefined') {
-      document.body.setAttribute('data-theme', 'dark');
-      document.body.style.fontSize = '16px';
+      const storedFontSize = localStorage.getItem('vedic_font_size') || 'medium';
+      document.documentElement.style.fontSize = storedFontSize === 'small'
+        ? '14px'
+        : storedFontSize === 'large'
+          ? '18px'
+          : '16px';
     }
 
     // Reset state
