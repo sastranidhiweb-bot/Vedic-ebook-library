@@ -118,6 +118,24 @@ const CategoryPanel: React.FC<CategoryPanelProps & { bookChapters?: { text: stri
   const handleFoldAll = () => setExpandedItems([]);
   const handleUnfoldAll = () => setExpandedItems(getAllCategoryIds(filteredCategories));
 
+  // Recursively find the ordered list of ancestor category itemIds that contain a given bookId
+  function findAncestorIds(nodes: any[], targetBookId: string, parentId = ''): string[] | null {
+    for (let idx = 0; idx < nodes.length; idx++) {
+      const node = nodes[idx];
+      const itemId = node._id
+        ? String(node._id)
+        : `${parentId}${node.name || node.title || 'node'}-${idx}`;
+      if (node.books?.some((b: any) => String(b._id) === String(targetBookId))) {
+        return [itemId];
+      }
+      if (node.children?.length > 0) {
+        const result = findAncestorIds(node.children, targetBookId, itemId);
+        if (result) return [itemId, ...result];
+      }
+    }
+    return null;
+  }
+
   // Track expanded state for each book
   const [expandedBooks, setExpandedBooks] = useState<{ [bookId: string]: boolean }>({});
 
@@ -250,18 +268,30 @@ const CategoryPanel: React.FC<CategoryPanelProps & { bookChapters?: { text: stri
   const [expandedAuthors, setExpandedAuthors] = useState<{[key: string]: boolean}>({});
   const [expandedTitleLetters, setExpandedTitleLetters] = useState<{[key: string]: boolean}>({});
 
+  // When bookId changes (e.g. selected from landing page), expand its ancestor
+  // category nodes in the tree and scroll to it.
   useEffect(() => {
-    if (!bookId) return;
+    if (!bookId || filteredCategories.length === 0) return;
 
-    const timer = setTimeout(() => {
-      const selectedBookElement = document.querySelector(`[data-book-id="${bookId}"]`) as HTMLElement | null;
-      if (selectedBookElement) {
-        selectedBookElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      }
-    }, 100);
+    const ancestorIds = findAncestorIds(filteredCategories, bookId);
+    if (ancestorIds && ancestorIds.length > 0) {
+      // Expand all ancestor category nodes
+      setExpandedItems(prev => Array.from(new Set([...prev, ...ancestorIds])));
 
-    return () => clearTimeout(timer);
-  }, [bookId]);
+      // After expansion re-renders, scroll the MUI TreeItem into view.
+      // MUI TreeItem renders as <li id="{itemId}"> so we look up by composed id.
+      const timer = setTimeout(() => {
+        const directParentId = ancestorIds[ancestorIds.length - 1];
+        const bookItemDomId = `${directParentId}-book-${bookId}`;
+        const el = document.getElementById(bookItemDomId);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bookId, filteredCategories]);
 
   // Organize books by author first letter
   const authorGroups = useMemo(() => {

@@ -127,6 +127,11 @@
   --header-badge-bg:       rgba(180,83,9,0.06);
   --header-badge-border:   rgba(180,83,9,0.35);
 
+  /* Active language pill (needs contrast on dark brown header) */
+  --lang-pill-active-bg:     #d97706;
+  --lang-pill-active-text:   #fef3c7;
+  --lang-pill-active-border: #fbbf24;
+
   /* Logout button */
   --logout-bg:             #b45309;
   --logout-bg-hover:       #92400e;
@@ -267,6 +272,11 @@
   --header-badge-bg:       rgba(217,119,6,0.10);
   --header-badge-border:   rgba(217,119,6,0.35);
 
+  /* Active language pill */
+  --lang-pill-active-bg:     #d97706;
+  --lang-pill-active-text:   #1a0c00;
+  --lang-pill-active-border: #d97706;
+
   /* Logout button */
   --logout-bg:             #d97706;
   --logout-bg-hover:       #b45309;
@@ -406,6 +416,11 @@
   /* Header badge (pills, logo circle, user pill) */
   --header-badge-bg:       rgba(34,211,238,0.08);
   --header-badge-border:   rgba(34,211,238,0.30);
+
+  /* Active language pill */
+  --lang-pill-active-bg:     #22d3ee;
+  --lang-pill-active-text:   #030a14;
+  --lang-pill-active-border: #22d3ee;
 
   /* Logout button */
   --logout-bg:             #0891b2;

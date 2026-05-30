@@ -2,9 +2,9 @@
 import ForgotPasswordModal from './ForgotPasswordModal';
 import VerifyOtpModal from './VerifyOtpModal';
 import ResetPasswordModal from './ResetPasswordModal';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { BACKEND_API_URL } from '../lib/config';
-import { Eye, EyeOff, User, Lock, BookOpen } from 'lucide-react';
+import { Eye, EyeOff, User, Lock, BookOpen, Mail, Phone, Calendar, AtSign } from 'lucide-react';
 
 interface LoginProps {
   onLoginSuccess: (user: any, token: string) => void;
@@ -136,285 +136,492 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, noticeMessage }) => {
     }
   };
 
+  /* ── shared input class helper ── */
+  const inputBase = `w-full pl-9 pr-4 py-2.5 rounded-xl text-sm outline-none transition-all duration-200
+    bg-yellow-50/90 border border-yellow-300 text-yellow-900 placeholder-yellow-600/60
+    focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400`;
+
   return (
     <div
-      className="min-h-screen flex items-center justify-center px-4 py-8"
-      style={{
-        backgroundImage: 'url(/login-bg.png)',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
-      }}
+      className="min-h-screen flex items-center justify-center px-4 py-8 relative overflow-hidden"
+      style={{ background: 'linear-gradient(135deg, #fdf3dc 0%, #fef0c4 35%, #fde8a0 65%, #fdf3dc 100%)' }}
     >
-      <div className="max-w-md w-full">
-        {noticeMessage && (
-          <div className="mb-5 p-4 rounded-xl bg-yellow-200/95 border-2 border-yellow-500 shadow-lg relative z-20">
-            <p className="text-yellow-950 text-base font-semibold text-center">{noticeMessage}</p>
-          </div>
-        )}
+      {/* ── Animated glow orbs ── */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        {/* Top-left large amber orb */}
+        <div style={{
+          position: 'absolute', top: '-120px', left: '-80px',
+          width: '500px', height: '500px', borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(217,119,6,0.22) 0%, rgba(251,191,36,0.10) 45%, transparent 70%)',
+          animation: 'pulse 8s ease-in-out infinite',
+        }} />
+        {/* Bottom-right deep saffron orb */}
+        <div style={{
+          position: 'absolute', bottom: '-100px', right: '-60px',
+          width: '460px', height: '460px', borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(180,83,9,0.20) 0%, rgba(217,119,6,0.08) 50%, transparent 70%)',
+          animation: 'pulse 10s ease-in-out infinite 2s',
+        }} />
+        {/* Centre-top soft gold shimmer */}
+        <div style={{
+          position: 'absolute', top: '10%', left: '50%', transform: 'translateX(-50%)',
+          width: '700px', height: '300px', borderRadius: '50%',
+          background: 'radial-gradient(ellipse, rgba(251,191,36,0.12) 0%, transparent 65%)',
+          animation: 'pulse 12s ease-in-out infinite 4s',
+        }} />
+      </div>
 
-        {/* Decorative Background Elements */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-yellow-400 bg-opacity-5 rounded-full blur-3xl"></div>
-          <div className="absolute bottom-1/4 right-1/4 w-40 h-40 bg-yellow-400 bg-opacity-3 rounded-full blur-3xl"></div>
+      {/* ── Vedic stamps grid (background decoration) ── */}
+      {[
+        { text: 'ŚRUTI',      top: '7%',  left: '4%',  rot: '-8deg',  size: '1.7rem' },
+        { text: 'SMṚTI',      top: '5%',  left: '48%', rot: '4deg',   size: '1.6rem' },
+        { text: 'PURĀṆAS',    top: '8%',  right: '4%', rot: '6deg',   size: '1.5rem' },
+        { text: 'VEDAS',      top: '35%', left: '2%',  rot: '-5deg',  size: '2rem'   },
+        { text: 'TANTRAS',    top: '34%', right: '2%', rot: '7deg',   size: '1.8rem' },
+        { text: 'ĀGAMAS',     top: '60%', left: '3%',  rot: '-6deg',  size: '1.6rem' },
+        { text: 'UPANIṢADS',  top: '62%', right: '2%', rot: '5deg',   size: '1.4rem' },
+        { text: 'UPAVEDAS',   bottom: '10%', left: '4%', rot: '6deg', size: '1.5rem' },
+        { text: 'CLASSICAL',  bottom: '9%',  right: '3%',rot: '-5deg',size: '1.6rem' },
+        { text: 'ITIHĀSA',    bottom: '8%',  left: '42%',rot: '3deg', size: '1.5rem' },
+        { text: 'DARŚANA',    top: '20%', left: '1%',  rot: '4deg',  size: '1.3rem' },
+        { text: 'VAIṢṆAVA',   top: '78%', left: '22%', rot: '-4deg', size: '1.4rem' },
+      ].map(({ text, rot, size, ...pos }, i) => (
+        <div
+          key={text}
+          className="absolute select-none pointer-events-none"
+          style={{
+            ...pos,
+            transform: `rotate(${rot})`,
+            fontFamily: 'serif',
+            fontSize: size,
+            fontWeight: 800,
+            letterSpacing: '0.12em',
+            color: 'transparent',
+            WebkitTextStroke: `1.5px rgba(180,83,9,${0.13 + (i % 3) * 0.04})`,
+            textTransform: 'uppercase',
+            padding: '0.35em 0.7em',
+            border: `1.5px solid rgba(180,83,9,${0.10 + (i % 4) * 0.03})`,
+            borderRadius: '6px',
+            background: `rgba(253,230,138,${0.12 + (i % 3) * 0.04})`,
+            backdropFilter: 'blur(1px)',
+          }}
+        >
+          {text}
+        </div>
+      ))}
+
+      {/* ── Decorative mandala rings (pure CSS) ── */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden flex items-center justify-center">
+        {[320, 520, 720].map((size, i) => (
+          <div
+            key={size}
+            style={{
+              position: 'absolute',
+              width: `${size}px`, height: `${size}px`,
+              borderRadius: '50%',
+              border: `1px solid rgba(180,83,9,${0.06 - i * 0.015})`,
+              boxShadow: `inset 0 0 ${20 + i * 20}px rgba(217,119,6,${0.04 - i * 0.01})`,
+            }}
+          />
+        ))}
+      </div>
+
+      {/* ── Floating Sanskrit characters ── */}
+      {[
+        { ch: 'ॐ',  top: '15%', left: '14%',  size: '3.5rem', op: 0.10 },
+        { ch: '॥',  top: '70%', left: '16%',  size: '2.5rem', op: 0.08 },
+        { ch: 'ॐ',  top: '20%', right: '14%', size: '3rem',   op: 0.09 },
+        { ch: 'स्व', bottom:'18%', right:'16%', size:'2.5rem', op: 0.08 },
+        { ch: '卐',  bottom: '20%', left: '48%', size: '2rem', op: 0.07 },
+      ].map(({ ch, size, op, ...pos }, i) => (
+        <div
+          key={i}
+          className="absolute select-none pointer-events-none"
+          style={{ ...pos, fontSize: size, color: `rgba(120,53,15,${op})`, fontFamily: 'serif', lineHeight: 1 }}
+        >
+          {ch}
+        </div>
+      ))}
+
+      {/* Pulse keyframe injected inline */}
+      <style>{`
+        @keyframes pulse {
+          0%, 100% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.08); opacity: 0.75; }
+        }
+      `}</style>
+
+      {/* ── Notice banner ── */}
+      {noticeMessage && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-2xl shadow-xl bg-yellow-100/95 border-2 border-yellow-400">
+          <p className="text-yellow-950 text-sm font-semibold text-center">{noticeMessage}</p>
+        </div>
+      )}
+
+      {/* ── Main card ── */}
+      <div
+        className="w-full flex flex-col md:flex-row overflow-hidden"
+        style={{
+          maxWidth: isSignUp ? '860px' : '820px',
+          borderRadius: '24px',
+          boxShadow: '0 32px 80px rgba(120,53,15,0.35), 0 8px 24px rgba(120,53,15,0.2)',
+        }}
+      >
+        {/* ══ LEFT: Branding panel ══ */}
+        <div
+          className="md:w-5/12 flex flex-row md:flex-col items-center justify-center md:justify-center px-4 py-3 md:p-10 relative overflow-hidden"
+          style={{
+            background: 'linear-gradient(155deg, #5c2a08 0%, #78350f 40%, #92400e 80%, #7c3210 100%)',
+          }}
+        >
+          {/* Decorative glow blobs — desktop only */}
+          <div
+            className="hidden md:block absolute pointer-events-none"
+            style={{
+              width: '260px', height: '260px', borderRadius: '50%',
+              top: '-60px', right: '-60px',
+              background: 'radial-gradient(circle, rgba(251,191,36,0.18) 0%, transparent 70%)',
+            }}
+          />
+          <div
+            className="hidden md:block absolute pointer-events-none"
+            style={{
+              width: '200px', height: '200px', borderRadius: '50%',
+              bottom: '-50px', left: '-50px',
+              background: 'radial-gradient(circle, rgba(251,191,36,0.14) 0%, transparent 70%)',
+            }}
+          />
+
+          {/* OM symbol watermark */}
+          <div
+            className="absolute top-2 right-3 md:top-5 md:right-6 select-none pointer-events-none"
+            style={{ fontSize: '2.5rem', color: 'rgba(251,191,36,0.12)', fontFamily: 'serif', lineHeight: 1 }}
+          >ॐ</div>
+
+          {/* Thin top accent line */}
+          <div
+            className="absolute top-0 left-0 right-0 h-1"
+            style={{ background: 'linear-gradient(to right, transparent, #fbbf24, #d97706, #fbbf24, transparent)' }}
+          />
+
+          {/* Logo circle */}
+          <div
+            className="relative flex-shrink-0 flex items-center justify-center mr-3 md:mr-0 md:mb-6"
+            style={{
+              width: '48px', height: '48px',
+              borderRadius: '50%',
+              background: 'rgba(251,191,36,0.12)',
+              border: '2px solid rgba(251,191,36,0.35)',
+              boxShadow: '0 0 20px rgba(251,191,36,0.15)',
+            }}
+          >
+            <BookOpen className="w-5 h-5 md:w-9 md:h-9" style={{ color: '#fde68a' }} />
+          </div>
+
+          {/* Mobile: title + subtitle stacked inline; Desktop: centred column */}
+          <div className="flex flex-col md:items-center">
+            {/* Title */}
+            <h1
+              className="text-xl md:text-3xl font-bold tracking-wide md:text-center leading-tight"
+              style={{ color: '#fef3c7', letterSpacing: '0.04em', textShadow: '0 2px 12px rgba(0,0,0,0.3)' }}
+            >
+              Śāstra Nidhi
+            </h1>
+            <p className="text-xs md:text-sm font-medium md:mb-0.5" style={{ color: '#fcd34d' }}>Vedic E-Books Library</p>
+
+            {/* Hidden on mobile */}
+            <p className="hidden md:block text-xs mb-8" style={{ color: 'rgba(253,230,138,0.6)' }}>Digital Repository of Vedic Knowledge</p>
+          </div>
+
+          {/* Gold divider — desktop only */}
+          <div className="hidden md:block" style={{ width: '48px', height: '1.5px', background: 'linear-gradient(to right, transparent, #fbbf24, transparent)', marginBottom: '1.5rem' }} />
+
+          {/* Sanskrit quote — desktop only */}
+          <div className="hidden md:block text-center px-4">
+            <p
+              className="text-sm leading-relaxed italic mb-1"
+              style={{ color: 'rgba(253,230,138,0.85)', fontFamily: 'serif' }}
+            >
+              "विद्या ददाति विनयं"
+            </p>
+            <p className="text-xs" style={{ color: 'rgba(251,191,36,0.5)' }}>
+              Knowledge bestows humility
+            </p>
+          </div>
+
+          {/* Bottom label — desktop only */}
+          <p
+            className="hidden md:block absolute bottom-5 text-xs tracking-widest select-none"
+            style={{ color: 'rgba(251,191,36,0.25)', letterSpacing: '0.2em' }}
+          >
+            SACRED TEXTS
+          </p>
         </div>
 
-        {/* Header */}
-        <div className="text-center mb-8 relative z-10">
-          <div className="relative flex flex-col items-center justify-center">
-            <div className="absolute inset-0 mx-auto w-full h-full flex items-center justify-center">
-                    <div
-                      className="backdrop-blur-lg bg-yellow-100/50 rounded-2xl border border-yellow-300 shadow-2xl w-full max-w-md mx-auto"
-                  style={{ height: '210px', boxShadow: '0 8px 32px 0 rgba(255, 193, 7, 0.15)' }}
-              ></div>
-            </div>
-            <div className="relative z-10 mt-6">
-              <div className="flex flex-col items-center">
-                <div className="mx-auto w-16 h-16 rounded-full bg-yellow-900/80 flex items-center justify-center mb-4 shadow-2xl shadow-yellow-900/40 border-2 border-yellow-700">
-                  <BookOpen className="w-8 h-8 text-yellow-100 drop-shadow-lg" />
-                </div>
-                <div className="space-y-2 text-center">
-                  <h1 className="text-3xl font-bold text-yellow-900 tracking-wide drop-shadow-lg">Śāstra Nidhi</h1>
-                  <p className="text-yellow-900/90 text-sm font-medium drop-shadow-lg">Vedic E-Books Library</p>
-                  <p className="text-yellow-900/80 text-xs drop-shadow-lg">Vedic Literature</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Auth Form */}
-        <div className="bg-yellow-100/90 rounded-2xl shadow-2xl p-8 border border-yellow-300 relative z-10">
+        {/* ══ RIGHT: Form panel ══ */}
+        <div
+          className="md:w-7/12 flex flex-col justify-center px-5 py-6 md:px-8 md:py-10"
+          style={{
+            background: 'rgba(255,248,224,0.97)',
+            backdropFilter: 'blur(24px)',
+          }}
+        >
           {isSignUp ? (
-            <form onSubmit={handleSignUp} className="space-y-6">
-              <div className="text-center mb-6">
-                <h3 className="text-2xl font-semibold text-yellow-900 mb-2">Sign Up</h3>
-                <p className="text-yellow-900/80 text-sm">Create your account to access the sacred library</p>
+            /* ── Sign-up form ── */
+            <form onSubmit={handleSignUp} className="space-y-3.5">
+              <div className="mb-5">
+                <h2 className="text-2xl font-bold" style={{ color: '#78350f' }}>Create Account</h2>
+                <p className="text-sm mt-0.5" style={{ color: '#92400e' }}>Join the treasury of Vedic wisdom</p>
               </div>
+
+              {/* Name */}
               <div>
-                <label className="block text-sm font-medium mb-3 text-yellow-900">Name</label>
-                <input
-                  type="text"
-                  value={signupName}
-                  onChange={e => setSignupName(e.target.value)}
-                  className="w-full px-4 py-3 bg-yellow-50 border border-yellow-300 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 text-yellow-900 placeholder-yellow-700 transition-all duration-300"
-                  placeholder="Enter your full name"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-3 text-yellow-900">Email</label>
-                <input
-                  type="email"
-                  value={signupEmail}
-                  onChange={e => setSignupEmail(e.target.value)}
-                  className="w-full px-4 py-3 bg-yellow-50 border border-yellow-300 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 text-yellow-900 placeholder-yellow-700 transition-all duration-300"
-                  placeholder="Enter your email address"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-3 text-yellow-900">Username</label>
-                <input
-                  type="text"
-                  value={signupUsername}
-                  onChange={e => setSignupUsername(e.target.value)}
-                  className="w-full px-4 py-3 bg-yellow-50 border border-yellow-300 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 text-yellow-900 placeholder-yellow-700 transition-all duration-300"
-                  placeholder="Choose a username"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-3 text-yellow-900">Password</label>
-                <input
-                  type="password"
-                  value={signupPassword}
-                  onChange={e => setSignupPassword(e.target.value)}
-                  className="w-full px-4 py-3 bg-yellow-50 border border-yellow-300 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 text-yellow-900 placeholder-yellow-700 transition-all duration-300"
-                  placeholder="Create a password"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-3 text-yellow-900">Date of Birth</label>
-                <input
-                  type="date"
-                  value={signupDob}
-                  onChange={e => setSignupDob(e.target.value)}
-                  className="w-full px-4 py-3 bg-yellow-50 border border-yellow-300 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 text-yellow-900 placeholder-yellow-700 transition-all duration-300"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-3 text-yellow-900">Contact Number</label>
-                <input
-                  type="text"
-                  value={signupContact}
-                  onChange={e => setSignupContact(e.target.value)}
-                  className="w-full px-4 py-3 bg-yellow-50 border border-yellow-300 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 text-yellow-900 placeholder-yellow-700 transition-all duration-300"
-                  placeholder="Enter your contact number"
-                  required
-                />
-              </div>
-              {/* Error Message */}
-              {error && (
-                <div className="p-4 rounded-lg bg-red-100 border border-red-400">
-                  <p className="text-red-700 text-sm">{error}</p>
-                </div>
-              )}
-              <button
-                type="submit"
-                disabled={isLoading}
-                className={`w-full py-3 px-4 rounded-lg font-medium transition-all duration-300 transform ${
-                  isLoading 
-                    ? 'opacity-50 cursor-not-allowed bg-gray-600' 
-                    : 'bg-yellow-900 text-yellow-100 hover:bg-yellow-800 hover:text-yellow-50 hover:shadow-lg hover:shadow-yellow-900/25 hover:-translate-y-0.5'
-                }`}
-              >
-                {isLoading ? (
-                  <div className="flex items-center justify-center space-x-2">
-                    <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
-                    <span>Signing up...</span>
-                  </div>
-                ) : (
-                  'Sign Up'
-                )}
-              </button>
-              <div className="text-center mt-4">
-                <span className="text-yellow-900/80 text-sm">Already have an account?</span>
-                <button type="button" className="ml-2 text-yellow-900 hover:underline text-sm font-bold" onClick={() => setIsSignUp(false)}>Sign In</button>
-              </div>
-            </form>
-          ) : (
-            <form onSubmit={handleLogin} className="space-y-6">
-              <div className="text-center mb-6">
-                <h3 className="text-2xl font-semibold text-yellow-900 mb-2">Sign In</h3>
-                <p className="text-yellow-900/80 text-sm">Enter your credentials to access the sacred library</p>
-              </div>
-              {/* Email */}
-              <div>
-                <label className="block text-sm font-medium mb-3 text-yellow-900">Email or Username</label>
+                <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: '#92400e' }}>Full Name</label>
                 <div className="relative">
-                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="text"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 bg-yellow-50 border border-yellow-300 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 text-yellow-900 placeholder-yellow-700 transition-all duration-300"
-                    placeholder="Enter your email or username"
-                    required
-                    autoComplete="username"
-                  />
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#b45309' }} />
+                  <input type="text" value={signupName} onChange={e => setSignupName(e.target.value)}
+                    className={inputBase} placeholder="Your full name" required />
                 </div>
               </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                {/* Email */}
+                <div>
+                  <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: '#92400e' }}>Email</label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#b45309' }} />
+                    <input type="email" value={signupEmail} onChange={e => setSignupEmail(e.target.value)}
+                      className={inputBase} placeholder="your@email.com" required />
+                  </div>
+                </div>
+                {/* Username */}
+                <div>
+                  <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: '#92400e' }}>Username</label>
+                  <div className="relative">
+                    <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#b45309' }} />
+                    <input type="text" value={signupUsername} onChange={e => setSignupUsername(e.target.value)}
+                      className={inputBase} placeholder="username" required />
+                  </div>
+                </div>
+              </div>
+
               {/* Password */}
               <div>
-                <label className="block text-sm font-medium mb-3 text-yellow-900">Password</label>
+                <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: '#92400e' }}>Password</label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#b45309' }} />
                   <input
                     type={showPassword ? 'text' : 'password'}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-10 pr-12 py-3 bg-yellow-50 border border-yellow-300 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 text-yellow-900 placeholder-yellow-700 transition-all duration-300"
-                    placeholder="Enter your password"
-                    required
-                    autoComplete="current-password"
+                    value={signupPassword} onChange={e => setSignupPassword(e.target.value)}
+                    className={`${inputBase} pr-10`} placeholder="Create a strong password" required
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-yellow-400 transition-colors"
-                  >
-                    {showPassword ? (
-                      <EyeOff className="w-5 h-5" />
-                    ) : (
-                      <Eye className="w-5 h-5" />
-                    )}
+                  <button type="button" onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors"
+                    style={{ color: '#b45309' }}>
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
               </div>
-              {/* Remember Me */}
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="remember"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className="w-4 h-4 rounded border-gray-600 bg-gray-700 focus:ring-yellow-400 focus:ring-2 text-yellow-400"
-                />
-                <label htmlFor="remember" className="ml-3 text-sm text-yellow-900">Remember me</label>
+
+              <div className="grid grid-cols-2 gap-3">
+                {/* DOB */}
+                <div>
+                  <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: '#92400e' }}>Date of Birth</label>
+                  <div className="relative">
+                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#b45309' }} />
+                    <input type="date" value={signupDob} onChange={e => setSignupDob(e.target.value)}
+                      className={inputBase} required />
+                  </div>
+                </div>
+                {/* Contact */}
+                <div>
+                  <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: '#92400e' }}>Contact No.</label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#b45309' }} />
+                    <input type="text" value={signupContact} onChange={e => setSignupContact(e.target.value)}
+                      className={inputBase} placeholder="Phone number" required />
+                  </div>
+                </div>
               </div>
-              {/* Error Message */}
+
+              {/* Error */}
               {error && (
-                <div className="p-4 rounded-lg bg-red-100 border border-red-400">
+                <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 border border-red-200">
+                  <span className="text-red-500 mt-0.5">✕</span>
                   <p className="text-red-700 text-sm">{error}</p>
                 </div>
               )}
-              {/* Login Button */}
+
+              {/* Submit */}
               <button
-                type="submit"
-                disabled={isLoading}
-                className={`w-full py-3 px-4 rounded-lg font-medium transition-all duration-300 transform ${
-                  isLoading 
-                    ? 'opacity-50 cursor-not-allowed bg-gray-600' 
-                    : 'bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-gray-900 hover:shadow-lg hover:shadow-yellow-400/25 hover:-translate-y-0.5'
-                }`}
+                type="submit" disabled={isLoading}
+                className="w-full py-3 rounded-xl font-semibold text-sm transition-all duration-200 mt-1"
+                style={{
+                  background: isLoading ? '#d1d5db' : 'linear-gradient(135deg, #78350f 0%, #92400e 100%)',
+                  color: isLoading ? '#9ca3af' : '#fef3c7',
+                  boxShadow: isLoading ? 'none' : '0 4px 16px rgba(120,53,15,0.3)',
+                  cursor: isLoading ? 'not-allowed' : 'pointer',
+                  transform: isLoading ? 'none' : undefined,
+                }}
               >
-                {isLoading ? (
-                  <div className="flex items-center justify-center space-x-2">
-                    <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
-                    <span>Signing in...</span>
-                  </div>
-                ) : (
-                  'Sign In'
-                )}
+                {isLoading
+                  ? <span className="flex items-center justify-center gap-2">
+                      <span className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin inline-block" />
+                      Creating account…
+                    </span>
+                  : 'Create Account'}
               </button>
-              <div className="text-center mt-4">
-                <span className="text-yellow-900/80 text-sm">Don't have an account?</span>
-                <button type="button" className="ml-2 text-yellow-900 hover:underline text-sm font-bold" onClick={() => setIsSignUp(true)}>Sign Up</button>
-                <div className="mt-2">
-                  <button type="button" className="text-blue-700 hover:underline text-xs" onClick={() => setShowForgotPasswordModal(true)}>
-                    Forgot your Password?
-                  </button>
-                      <ForgotPasswordModal
-                        open={showForgotPasswordModal}
-                        onClose={() => setShowForgotPasswordModal(false)}
-                        onSuccess={(email) => {
-                          setShowForgotPasswordModal(false);
-                          setResetFlowEmail(email);
-                          setShowVerifyOtpModal(true);
-                        }}
-                      />
-                      <VerifyOtpModal
-                        open={showVerifyOtpModal}
-                        email={resetFlowEmail}
-                        onClose={() => setShowVerifyOtpModal(false)}
-                        onSuccess={(otp) => {
-                          setResetFlowOtp(otp);
-                          setShowVerifyOtpModal(false);
-                          setShowResetPasswordModal(true);
-                        }}
-                      />
-                      <ResetPasswordModal
-                        open={showResetPasswordModal}
-                        email={resetFlowEmail}
-                        otp={resetFlowOtp}
-                        onClose={() => setShowResetPasswordModal(false)}
-                        onSuccess={() => {
-                          setShowResetPasswordModal(false);
-                          setResetFlowEmail('');
-                          setResetFlowOtp('');
-                        }}
-                      />
+
+              <p className="text-center text-sm" style={{ color: '#92400e' }}>
+                Already have an account?{' '}
+                <button type="button" className="font-bold hover:underline" style={{ color: '#78350f' }}
+                  onClick={() => { setIsSignUp(false); setError(''); }}>
+                  Sign In
+                </button>
+              </p>
+            </form>
+
+          ) : (
+            /* ── Sign-in form ── */
+            <form onSubmit={handleLogin} className="space-y-5">
+              <div className="mb-2">
+                <h2 className="text-2xl font-bold" style={{ color: '#78350f' }}>Welcome Back</h2>
+                <p className="text-sm mt-0.5" style={{ color: '#92400e' }}>Sign in to continue your sacred journey</p>
+              </div>
+
+              {/* Email / Username */}
+              <div>
+                <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: '#92400e' }}>
+                  Email or Username
+                </label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#b45309' }} />
+                  <input
+                    type="text" value={email} onChange={e => setEmail(e.target.value)}
+                    className={inputBase} placeholder="Enter your email or username"
+                    required autoComplete="username"
+                  />
                 </div>
               </div>
+
+              {/* Password */}
+              <div>
+                <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: '#92400e' }}>
+                  Password
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#b45309' }} />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={password} onChange={e => setPassword(e.target.value)}
+                    className={`${inputBase} pr-10`} placeholder="Enter your password"
+                    required autoComplete="current-password"
+                  />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors"
+                    style={{ color: '#b45309' }}>
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Remember me + Forgot */}
+              <div className="flex items-center justify-between">
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <div
+                    className="relative w-4 h-4 rounded"
+                    style={{ border: `2px solid ${rememberMe ? '#d97706' : '#fcd34d'}`, background: rememberMe ? '#d97706' : 'transparent', transition: 'all 0.15s' }}
+                    onClick={() => setRememberMe(v => !v)}
+                  >
+                    {rememberMe && (
+                      <svg className="absolute inset-0 w-3 h-3 m-auto" viewBox="0 0 12 12" fill="none">
+                        <path d="M2 6l3 3 5-5" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    )}
+                  </div>
+                  <span className="text-sm" style={{ color: '#78350f' }}>Remember me</span>
+                </label>
+                <button type="button" onClick={() => setShowForgotPasswordModal(true)}
+                  className="text-xs font-medium hover:underline transition-colors"
+                  style={{ color: '#b45309' }}>
+                  Forgot password?
+                </button>
+              </div>
+
+              {/* Error */}
+              {error && (
+                <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 border border-red-200">
+                  <span className="text-red-500 mt-0.5">✕</span>
+                  <p className="text-red-700 text-sm">{error}</p>
+                </div>
+              )}
+
+              {/* Submit */}
+              <button
+                type="submit" disabled={isLoading}
+                className="w-full py-3 rounded-xl font-semibold text-sm transition-all duration-200"
+                style={{
+                  background: isLoading ? '#d1d5db' : 'linear-gradient(135deg, #d97706 0%, #f59e0b 50%, #fbbf24 100%)',
+                  color: isLoading ? '#9ca3af' : '#78350f',
+                  boxShadow: isLoading ? 'none' : '0 4px 20px rgba(217,119,6,0.4)',
+                  cursor: isLoading ? 'not-allowed' : 'pointer',
+                }}
+              >
+                {isLoading
+                  ? <span className="flex items-center justify-center gap-2">
+                      <span className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin inline-block" />
+                      Signing in…
+                    </span>
+                  : 'Sign In'}
+              </button>
+
+              <p className="text-center text-sm" style={{ color: '#92400e' }}>
+                Don't have an account?{' '}
+                <button type="button" className="font-bold hover:underline" style={{ color: '#78350f' }}
+                  onClick={() => { setIsSignUp(true); setError(''); }}>
+                  Sign Up
+                </button>
+              </p>
+
+              {/* Modals */}
+              <ForgotPasswordModal
+                open={showForgotPasswordModal}
+                onClose={() => setShowForgotPasswordModal(false)}
+                onSuccess={(email) => {
+                  setShowForgotPasswordModal(false);
+                  setResetFlowEmail(email);
+                  setShowVerifyOtpModal(true);
+                }}
+              />
+              <VerifyOtpModal
+                open={showVerifyOtpModal}
+                email={resetFlowEmail}
+                onClose={() => setShowVerifyOtpModal(false)}
+                onSuccess={(otp) => {
+                  setResetFlowOtp(otp);
+                  setShowVerifyOtpModal(false);
+                  setShowResetPasswordModal(true);
+                }}
+              />
+              <ResetPasswordModal
+                open={showResetPasswordModal}
+                email={resetFlowEmail}
+                otp={resetFlowOtp}
+                onClose={() => setShowResetPasswordModal(false)}
+                onSuccess={() => {
+                  setShowResetPasswordModal(false);
+                  setResetFlowEmail('');
+                  setResetFlowOtp('');
+                }}
+              />
             </form>
           )}
+
           {/* Footer */}
-          <div className="mt-8 pt-6 border-t border-yellow-300 text-center">
-            <p className="text-yellow-900/80 text-xs">Accessing the treasury of Vedic wisdom</p>
-            <p className="text-yellow-900/60 text-xs mt-1">🙏 Hare Krishna 🙏</p>
+          <div className="mt-6 pt-4 text-center" style={{ borderTop: '1px solid rgba(217,119,6,0.2)' }}>
+            <p className="text-xs" style={{ color: 'rgba(146,64,14,0.5)' }}>
+              Accessing the treasury of Vedic wisdom
+            </p>
           </div>
         </div>
       </div>
