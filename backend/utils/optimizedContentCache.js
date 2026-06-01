@@ -56,6 +56,35 @@ class OptimizedContentCache {
     try {
       await fs.mkdir(this.diskCacheDir, { recursive: true });
       console.log('📁 Disk cache directory initialized:', this.diskCacheDir);
+
+      // Rehydrate in-memory diskCache Map from existing JSON files on disk.
+      // This ensures disk-cached books survive process restarts (e.g. AppSail cold starts).
+      const files = await fs.readdir(this.diskCacheDir);
+      let rehydrated = 0;
+      for (const file of files) {
+        if (!file.endsWith('.json')) continue;
+        const bookId = file.slice(0, -5); // strip .json
+        const filePath = path.join(this.diskCacheDir, file);
+        try {
+          const stat = await fs.stat(filePath);
+          if (stat.size === 0) continue;
+          // Peek at metadata without loading full content into memory
+          const raw = await fs.readFile(filePath, 'utf8');
+          const entry = JSON.parse(raw);
+          if (!entry || !entry.metadata) continue;
+          this.diskCache.set(bookId, {
+            filePath,
+            cachedAt: entry.cachedAt || stat.mtimeMs,
+            metadata: entry.metadata,
+          });
+          rehydrated++;
+        } catch {
+          // Corrupt or unreadable cache file — skip silently
+        }
+      }
+      if (rehydrated > 0) {
+        console.log(`♻️  Rehydrated disk cache Map with ${rehydrated} existing cache entries`);
+      }
     } catch (error) {
       console.error('Failed to create disk cache directory:', error);
     }
@@ -732,6 +761,14 @@ class OptimizedContentCache {
     }
     
     return cleared;
+  }
+
+  /**
+   * Returns true if the book is already present in the in-memory diskCache Map
+   * (i.e. either cached this session or rehydrated from existing JSON files on startup).
+   */
+  isDiskCached(bookId) {
+    return this.diskCache.has(bookId);
   }
 
   /**

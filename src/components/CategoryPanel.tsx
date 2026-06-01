@@ -1,6 +1,6 @@
 'use client';
 
-import { Search, Plus, Book as BookIcon, BookOpen, FileText, ChevronRight, ChevronDown, RefreshCw, X } from 'lucide-react';
+import { Search, Plus, Book as BookIcon, BookOpen, FileText, ChevronRight, ChevronLeft, ChevronDown, RefreshCw, X } from 'lucide-react';
 import { SimpleTreeView, TreeItem } from '@mui/x-tree-view';
 import { Book } from '../lib/bookStorage';
 import { useState, useMemo, useEffect } from 'react';
@@ -20,6 +20,7 @@ interface CategoryPanelProps {
   loadingBooks?: boolean;
   expandedCategories?: {[key: string]: boolean};
   bookId?: string;
+  highlightCategory?: string;
   onCategoryToggle?: (category: string) => void;
   onBookSelection: (book: Book) => void;
   onFoldAll?: () => void;
@@ -42,6 +43,7 @@ const CategoryPanel: React.FC<CategoryPanelProps & { bookChapters?: { text: stri
   loadingBooks = false,
   refreshKey,
   onClose,
+  highlightCategory,
   ...rest
 }) => {
   // Local state for categories and user privileges
@@ -292,6 +294,41 @@ const CategoryPanel: React.FC<CategoryPanelProps & { bookChapters?: { text: stri
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bookId, filteredCategories]);
+
+  // When highlightCategory changes, find that category in the tree and expand
+  // its ancestors so it becomes visible in the panel.
+  function findCategoryAncestorIds(nodes: any[], name: string, parentId = ''): string[] | null {
+    const needle = name.toLowerCase();
+    for (let idx = 0; idx < nodes.length; idx++) {
+      const node = nodes[idx];
+      const itemId = node._id
+        ? String(node._id)
+        : `${parentId}${node.name || node.title || 'node'}-${idx}`;
+      const nodeName: string = (node.name || node.title || '').toLowerCase();
+      // Exact match OR the DB name starts with the search term followed by a space/paren
+      // (handles cases like "Jyotiṣa (Astronomy)" when searching "Jyotiṣa")
+      if (nodeName === needle || nodeName.startsWith(needle + ' (') || nodeName.startsWith(needle + ' ')) return [itemId];
+      if (node.children?.length > 0) {
+        const result = findCategoryAncestorIds(node.children, name, itemId);
+        if (result) return [itemId, ...result];
+      }
+    }
+    return null;
+  }
+
+  useEffect(() => {
+    if (!highlightCategory || filteredCategories.length === 0) return;
+    const ids = findCategoryAncestorIds(filteredCategories, highlightCategory);
+    if (ids && ids.length > 0) {
+      setExpandedItems(prev => Array.from(new Set([...prev, ...ids])));
+      setTimeout(() => {
+        const targetId = ids[ids.length - 1];
+        const el = document.getElementById(targetId);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }, 300);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [highlightCategory, filteredCategories]);
 
   // Organize books by author first letter
   const authorGroups = useMemo(() => {
@@ -613,9 +650,9 @@ const CategoryPanel: React.FC<CategoryPanelProps & { bookChapters?: { text: stri
           <button
             onClick={onClose}
             style={{ color: 'var(--panel-header-color)', opacity: 0.8, background: 'none', border: 'none', cursor: 'pointer', padding: '2px', display: 'flex', alignItems: 'center', borderRadius: '0.25rem' }}
-            title="Close panel"
+            title="Collapse panel"
           >
-            <X size={18} />
+            <ChevronLeft size={18} />
           </button>
         )}
       </div>

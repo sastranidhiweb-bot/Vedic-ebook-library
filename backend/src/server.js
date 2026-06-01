@@ -193,20 +193,33 @@ const startServer = async () => {
       if (booksToPreload.length > 0) {
         console.log(`🔥 Preloading optimized cache with ${booksToPreload.length} books...`);
         console.log('📚 Books to preload:', booksToPreload.map(b => b.title).join(', '));
-        
-        // Start background preload (don't wait)
-        optimizedCache.preloadPopularBooks(booksToPreload, booksToPreload.length).catch(error => {
-          console.error('❌ Background cache preload error:', error.message);
-        });
-        
-        // Show initial cache stats
-        setTimeout(() => {
-          const stats = optimizedCache.getCacheStats();
-          console.log('📊 Cache initialization stats:', {
-            hotCache: `${stats.hotCache.entries}/${stats.hotCache.maxSize} (${stats.hotCache.memoryUsageMB}MB)`,
-            hitRate: stats.performance.hitRate
+
+        // On Zoho AppSail the disk cache Map is rehydrated during initializeDiskCache().
+        // Books already in the disk cache don't need a full re-extraction; skip them so the
+        // preload only does real work for genuinely uncached books and finishes quickly.
+        const booksNeedingExtraction = booksToPreload.filter(
+          b => !optimizedCache.isDiskCached(b._id.toString())
+        );
+
+        if (booksNeedingExtraction.length > 0) {
+          // Wait for preload to finish — prevents first-request cache misses on cold starts.
+          // A 30 s timeout guards against hung extraction on AppSail.
+          const preloadPromise = optimizedCache.preloadPopularBooks(booksNeedingExtraction, booksNeedingExtraction.length);
+          const timeoutPromise = new Promise(resolve => setTimeout(resolve, 30000));
+          await Promise.race([preloadPromise, timeoutPromise]).catch(error => {
+            console.error('❌ Cache preload error:', error.message);
           });
-        }, 2000);
+        } else {
+          console.log('✅ All books already in disk cache — skipping extraction preload');
+        }
+
+        // Show cache stats after preload
+        const stats = optimizedCache.getCacheStats();
+        console.log('📊 Cache initialization stats:', {
+          hotCache: `${stats.hotCache.entries}/${stats.hotCache.maxSize} (${stats.hotCache.memoryUsageMB}MB)`,
+          diskCache: stats.diskCache?.entries ? Object.keys(stats.diskCache.entries).length : 0,
+          hitRate: stats.performance.hitRate
+        });
       } else {
         console.log('📚 No books found for cache preload');
       }

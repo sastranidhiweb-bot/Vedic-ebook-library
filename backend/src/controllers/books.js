@@ -873,10 +873,21 @@ export const searchInBook = catchAsync(async (req, res, next) => {
     const normalizedSearchQuery = normalizeSearchText(searchQuery);
     
     // Get the same pagination logic as used by getPaginatedContent API
-    const cached = await optimizedCache.getCachedContent(book._id.toString(), 'html');
+    let cached = await optimizedCache.getCachedContent(book._id.toString(), 'html');
     if (!cached || !cached.content) {
-      console.log('❌ No cached content available for search mapping');
-      return next(new AppError('Book content not available for search mapping', 404));
+      // Cache miss — extract and cache on-demand (same as getBookText does)
+      console.log(`🔄 Cache miss for search in "${book.title}", extracting content...`);
+      try {
+        await optimizedCache.cacheBookContent(book, 'high', req);
+        cached = await optimizedCache.getCachedContent(book._id.toString(), 'html');
+      } catch (extractError) {
+        console.error('❌ Content extraction failed for search:', extractError);
+        return next(new AppError('Failed to extract book content for search', 500));
+      }
+      if (!cached || !cached.content) {
+        console.log('❌ Content still unavailable after extraction for search');
+        return next(new AppError('Book content not available for search', 500));
+      }
     }
     
     // Use same pagination logic as the API to ensure page numbers match

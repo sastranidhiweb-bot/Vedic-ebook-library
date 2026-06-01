@@ -217,14 +217,25 @@ function DiagramPanelInner({
   defaultZoom=0.55, minZoom=0.1, maxZoom=2.5,
   onNodeClick, containerStyle={}, legend, noScroll=false,
 }: DiagramPanelProps) {
-  const { zoomIn: rfIn, zoomOut: rfOut, setViewport } = useReactFlow();
+  const { zoomIn: rfIn, zoomOut: rfOut, setViewport, fitView } = useReactFlow();
   const [zoom, setZoom] = useState(defaultZoom);
   const STEP = 0.1;
   const PAD  = 200;
 
   const doIn    = useCallback(() => { rfIn({duration:200});  setZoom(z => Math.min(+(z+STEP).toFixed(2), maxZoom)); }, [rfIn, maxZoom]);
   const doOut   = useCallback(() => { rfOut({duration:200}); setZoom(z => Math.max(+(z-STEP).toFixed(2), minZoom)); }, [rfOut, minZoom]);
-  const doReset = useCallback(() => { setViewport({x:30, y:30, zoom:defaultZoom}, {duration:300}); setZoom(defaultZoom); }, [setViewport, defaultZoom]);
+  const doReset = useCallback(() => {
+    if (noScroll) {
+      fitView({ padding: 0.1, duration: 300 });
+    } else {
+      setViewport({x:30, y:30, zoom:defaultZoom}, {duration:300});
+      setZoom(defaultZoom);
+    }
+  }, [setViewport, fitView, defaultZoom, noScroll]);
+
+  // For noScroll diagrams the ReactFlow canvas must equal the visible height
+  // so that fitView fills the panel correctly.
+  const canvasH = noScroll ? viewH : fullH;
 
   const extent: [[number,number],[number,number]] = [
     [bbox.minX - PAD, bbox.minY - PAD],
@@ -241,7 +252,7 @@ function DiagramPanelInner({
       position: 'relative',
       ...containerStyle,
     }}>
-      <div style={{ width:'100%', height: fullH, position:'relative' }}>
+      <div style={{ width:'100%', height: canvasH, position:'relative' }}>
 
         {/* Sticky toolbar row: zoom controls (right) + legend (left) */}
         <div style={{ position:'sticky', top:0, zIndex:20, pointerEvents:'none', display:'flex', alignItems:'flex-start', height:0 }}>
@@ -280,8 +291,9 @@ function DiagramPanelInner({
             nodes={nodes}
             edges={edges}
             onNodeClick={onNodeClick}
-            fitView={false}
-            defaultViewport={{ x:30, y:30, zoom:defaultZoom }}
+            fitView={noScroll}
+            fitViewOptions={{ padding: 0.12 }}
+            defaultViewport={noScroll ? undefined : { x:30, y:30, zoom:defaultZoom }}
             minZoom={minZoom}
             maxZoom={maxZoom}
             translateExtent={extent}
@@ -321,18 +333,77 @@ export default function VedicKnowledgeFlow() {
   const classicalRef = useRef<HTMLDivElement>(null);
   const [mobileOpen, setMobileOpen] = React.useState(false);
 
-  const nodeRoutes: Record<string,string> = {
-    ramayana:    '/category/ramayana',
-    mahabharata: '/category/mahabharata',
-    vedas:       '/category/vedas',
-    upanishads:  '/category/upanishads',
-    gita:        '/category/gita',
-    puranas:     '/category/puranas',
+  // Map node id → category name as it appears in the DB tree.
+  // Clicking any node opens /homePage?category=<name> in guest mode.
+  // Keys are node IDs; values are the exact category `name` field from MongoDB.
+  // Run `Get-Names` against /api/categories/tree to verify these.
+  const nodeToCategory: Record<string, string> = {
+    vedic:          'Vedic Literature',           // conceptual root – no DB match, but harmless
+    sruti:          'ŚRUTI',
+    smrti:          'SMRITI',                     // DB uses plain 'I', not ṛ
+    vedas:          'VEDAS',
+    samhitas:       'Saṃhitās',                   // no direct DB entry; kept for completeness
+    brahmanas:      'Brāhmaṇas',
+    aranyakas:      'Āraṇyakas',
+    upanishads:     'Upaniṣads',
+    upvedas:        'UPAVEDAS',
+    vedangas:       'VEDĀNGAS',                   // DB uses plain N (not ṅ)
+    darshanas:      'ṢAḌ DARŚANAS',
+    puranas:        'PURĀṆAS',
+    itihasas:       'ITIHĀSAS',
+    tantras:        'TANTRAS',
+    agamas:         'ĀGAMAS',
+    ayurveda:       'Āyurveda',
+    dhanurveda:     'Dhanurveda',
+    gandharvaveda:  'Gāndharvaveda',
+    sthapathyaveda: 'Sthāpatyaveda',
+    arthashastra:   'Arthaśāstra',
+    kalpa:          'Kalpa',
+    siksa:          'Śikṣā',
+    vyakarana:      'Vyākaraṇa',
+    nirukta:        'Nirukta',
+    chandas:        'Chandas',
+    jyotisa:        'Jyotiṣa (Astronomy)',        // DB appends "(Astronomy)"
+    sankhya:        'Sāṅkhya',
+    yoga:           'Yoga',
+    nyaya:          'Nyāya',
+    vaisesika:      'Vaiśeṣika',
+    mimamsa:        'Mīmāṃsā',
+    vedanta:        'Vedānta (Vyāsa)',             // DB appends "(Vyāsa)"
+    maha:           'Mahā Purāṇas 18',            // DB appends " 18"
+    upa:            'Upa Purāṇas 18',             // DB appends " 18"
+    aupa:           'Aupa Purāṇas',
+    aupupa:         'Aauppa Purāṇas',             // DB spelling: "Aauppa" (double a)
+    sthala:         'Sthala Purāṇas',
+    ramayana:       'Rāmāyaṇa',
+    mahabharata:    'Mahābhārata',
+    visnu:          'Viṣṇu Sahasranāma',
+    gita:           'Bhagavad Gītā',
+    tamasic:        'Tāmasic',
+    rajasic:        'Rājasic',
+    sattvic:        'Sāttvic',
+    shakta:         'Śākta',
+    shaiva:         'Śaiva',
+    vaisnava:       'Vaiṣṇava',
+    vaikhanasa:     'Vaikhānasa',
+    pancharatra:    'Pāñcarātra',
+    advaita:        'Advaita',
+    bheda:          'Bheda-abheda',
+    dvaita:         'Dvaita (Mādhva)',             // DB appends "(Mādhva)"
+    kevala:         'Kevala-Advaita (Śaṅkara)',   // DB appends "(Śaṅkara)"
+    siva_adv:       'Śiva-advaita (Kashmir Śaivism)',
+    suddha:         'Śuddha-advaita (Vallabha)',
+    visita:         'Viśiṣṭa-Advaita (Rāmānuja)', // DB: hyphenated, not ṭādvaita
+    bheda_bhaskara: 'Bheda-abheda (Bhaskara)',    // DB: no macron on Bhaskara
+    bheda_nimbarka: 'Bheda-abheda (Nimbarka)',    // DB: no macron on Nimbarka
+    acintya:        'Acintya Bheda-abheda (Lord Caitanya)',
   };
 
-  const onNodeClick = (_:any, node:any) => {
-    const r = nodeRoutes[node.id];
-    if (r) window.open(r, '_blank', 'noopener,noreferrer');
+  const onNodeClick = (_: any, node: any) => {
+    const cat = nodeToCategory[node.id];
+    if (cat) {
+      router.push(`/homePage?category=${encodeURIComponent(cat)}`);
+    }
   };
 
   const scrollTo = (ref: React.RefObject<HTMLDivElement>) => {
@@ -407,7 +478,7 @@ export default function VedicKnowledgeFlow() {
               </button>
             ))}
           </nav>
-          <button onClick={() => router.push('/')} style={{ padding:'7px 18px', background:'linear-gradient(90deg,#1abc9c,#16a085)', border:'none', borderRadius:8, color:'#fff', fontSize:13, fontWeight:600, cursor:'pointer', display: isMobile ? 'none' : 'block' }}>
+          <button onClick={() => router.push('/login')} style={{ padding:'7px 18px', background:'linear-gradient(90deg,#1abc9c,#16a085)', border:'none', borderRadius:8, color:'#fff', fontSize:13, fontWeight:600, cursor:'pointer', display: isMobile ? 'none' : 'block' }}>
             Login / Sign Up
           </button>
           {isMobile && (
@@ -428,7 +499,7 @@ export default function VedicKnowledgeFlow() {
             {label}
           </button>
         ))}
-        <button onClick={() => router.push('/')} style={{ margin:'20px 16px', padding:'11px 20px', background:'linear-gradient(90deg,#1abc9c,#16a085)', border:'none', borderRadius:8, color:'#fff', fontSize:14, fontWeight:600, cursor:'pointer' }}>
+        <button onClick={() => router.push('/login')} style={{ margin:'20px 16px', padding:'11px 20px', background:'linear-gradient(90deg,#1abc9c,#16a085)', border:'none', borderRadius:8, color:'#fff', fontSize:14, fontWeight:600, cursor:'pointer' }}>
           Login / Sign Up
         </button>
       </div>
@@ -471,7 +542,7 @@ export default function VedicKnowledgeFlow() {
             nodes={lvNodes}
             edges={lvEdges}
             viewH={400}
-            fullH={900}
+            fullH={400}
             bbox={vBBox}
             defaultZoom={0.85}
             minZoom={0.2}
@@ -487,7 +558,7 @@ export default function VedicKnowledgeFlow() {
             nodes={lcNodes}
             edges={lcEdges}
             viewH={280}
-            fullH={700}
+            fullH={280}
             bbox={cBBox}
             defaultZoom={0.9}
             minZoom={0.2}

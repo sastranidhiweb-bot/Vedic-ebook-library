@@ -15,9 +15,10 @@ interface EBookReaderProps {
   onBookSelect?: (book: Book) => void;
   onViewChange?: (view: 'reading' | 'upload' | 'debug') => void;
   categoryPanelRefreshKey?: number;
+  highlightCategory?: string;
 }
 
-const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout, onBookSelect, onViewChange, categoryPanelRefreshKey }) => {
+const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout, onBookSelect, onViewChange, categoryPanelRefreshKey, highlightCategory }) => {
   // Books and categories state
   const [books, setBooks] = useState<Book[]>([]);
   const [categories, setCategories] = useState<{name: string; books: Book[]; expanded: boolean}[]>([]);
@@ -1367,6 +1368,7 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
                 loadingBooks={loadingBooks}
                 expandedCategories={expandedCategories}
                 bookId={bookId}
+                highlightCategory={highlightCategory}
                 onCategoryToggle={toggleCategoryExpanded}
                 onBookSelection={handleBookSelection}
                 onFoldAll={foldAllCategories}
@@ -1379,13 +1381,41 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
                   if (isMobile) setIsCategoryPanelVisible(false);
                 }}
                 refreshKey={categoryPanelRefreshKey}
-                onClose={isMobile ? () => setIsCategoryPanelVisible(false) : undefined}
+                onClose={() => setIsCategoryPanelVisible(false)}
               />
             </div>
           )}
 
           {/* Main Content Area */}
           <div className="flex-1 flex flex-col ebook-reader-content" style={{ background: 'var(--bg)', flex: 1, minHeight: 0, overflowY: 'auto' }}>
+
+            {/* Persistent sidebar toggle — always visible on desktop */}
+            <div
+              className="hidden md:flex items-center gap-2 px-3 py-1.5 flex-shrink-0 border-b"
+              style={{ background: 'var(--card)', borderColor: 'var(--border)' }}
+            >
+              <button
+                onClick={toggleCategoryPanel}
+                title={isCategoryPanelVisible ? 'Collapse sidebar' : 'Expand sidebar'}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '3px 10px 3px 6px',
+                  borderRadius: 6,
+                  background: 'var(--card-hover)',
+                  border: '1px solid var(--border)',
+                  cursor: 'pointer',
+                  color: 'var(--text-light)',
+                  fontSize: '0.78rem',
+                  fontWeight: 600,
+                }}
+              >
+                {isCategoryPanelVisible ? <ChevronLeft size={15} /> : <ChevronRight size={15} />}
+                {isCategoryPanelVisible ? 'Hide sidebar' : 'Show sidebar'}
+              </button>
+            </div>
+
             {/* Search Bar */}
             {bookId && content && (
               <div className="px-3 py-2 border-b ebook-reader-searchbar" style={{ background: 'var(--search-bar-bg)', borderColor: 'var(--border)' }}>
@@ -1640,8 +1670,25 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
                             <BookOpen className="w-3.5 h-3.5" />
                             Library
                           </button>
+                          {/* Desktop: toggle category panel */}
+                          <button
+                            className="hidden md:flex items-center justify-center flex-shrink-0"
+                            onClick={toggleCategoryPanel}
+                            title={isCategoryPanelVisible ? 'Collapse sidebar' : 'Expand sidebar'}
+                            style={{
+                              width: 28,
+                              height: 28,
+                              borderRadius: 6,
+                              background: 'var(--card-hover)',
+                              border: '1px solid var(--border)',
+                              cursor: 'pointer',
+                              color: 'var(--text-light)',
+                            }}
+                          >
+                            {isCategoryPanelVisible ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
+                          </button>
                           <BookOpen
-                            className="w-4 h-4 hidden md:block flex-shrink-0"
+                            className="w-4 h-4 flex-shrink-0"
                             style={{ color: 'var(--text-light)', marginTop: '1px' }}
                           />
                           <span className="font-bold text-sm sm:text-base truncate" style={{ color: 'var(--text-light)' }}>{title}</span>

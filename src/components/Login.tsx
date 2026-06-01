@@ -3,6 +3,7 @@ import ForgotPasswordModal from './ForgotPasswordModal';
 import VerifyOtpModal from './VerifyOtpModal';
 import ResetPasswordModal from './ResetPasswordModal';
 import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { BACKEND_API_URL } from '../lib/config';
 import { Eye, EyeOff, User, Lock, BookOpen, Mail, Phone, Calendar, AtSign } from 'lucide-react';
 
@@ -12,6 +13,9 @@ interface LoginProps {
 }
 
 const Login: React.FC<LoginProps> = ({ onLoginSuccess, noticeMessage }) => {
+  const searchParams = useSearchParams();
+  const noticeFromQuery = searchParams?.get('notice') || undefined;
+  const effectiveNotice = noticeMessage || noticeFromQuery;
   const [email, setEmail] = useState('');
   const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
   const [password, setPassword] = useState('');
@@ -252,9 +256,9 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, noticeMessage }) => {
       `}</style>
 
       {/* ── Notice banner ── */}
-      {noticeMessage && (
+      {effectiveNotice && (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-2xl shadow-xl bg-yellow-100/95 border-2 border-yellow-400">
-          <p className="text-yellow-950 text-sm font-semibold text-center">{noticeMessage}</p>
+          <p className="text-yellow-950 text-sm font-semibold text-center">{effectiveNotice}</p>
         </div>
       )}
 

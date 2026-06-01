@@ -542,6 +542,15 @@
   border-color: #fcd34d;
 }
 
+/* ── Dark theme reading surface: lighter warm-brown card for readability ── */
+[data-theme='dark'] .ebook-reader-book-content {
+  background:
+    linear-gradient(180deg, #3d1f00 0%, #4a2500 100%) !important;
+  color: var(--reader-text) !important;
+  border: 1px solid #7c3e10;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.4);
+}
+
 /* ── Light theme reading surface: distinct paper card with dark text ── */
 [data-theme='light'] .ebook-reader-book-content {
   background:

@@ -56,32 +56,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                          sessionStorage.getItem('vedic_user');
 
         if (storedToken && storedUser) {
-          // Verify token with backend
-          const { BACKEND_API_URL } = await import('../lib/config');
-          const response = await fetch(`${BACKEND_API_URL}/auth/verify`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ token: storedToken }),
-          });
+          // Optimistically trust the stored token so the UI shows immediately on refresh.
+          // Background verification will clear the session only if the server explicitly
+          // rejects the token (401/403). Network errors / server unavailability are ignored
+          // so a temporary backend outage doesn't log the user out.
+          const userData = JSON.parse(storedUser);
+          setUser(userData);
+          setToken(storedToken);
+          setIsAuthenticated(true);
+          setIsLoading(false); // release the loading gate immediately
 
-          if (response.ok) {
-            const userData = JSON.parse(storedUser);
-            setUser(userData);
-            setToken(storedToken);
-            setIsAuthenticated(true);
-          } else {
-            // Token is invalid, clear storage
-            localStorage.removeItem('vedic_auth_token');
-            localStorage.removeItem('vedic_user');
-            sessionStorage.removeItem('vedic_auth_token');
-            sessionStorage.removeItem('vedic_user');
+          // Verify in background — only invalidate on an explicit rejection
+          try {
+            const { BACKEND_API_URL } = await import('../lib/config');
+            const response = await fetch(`${BACKEND_API_URL}/auth/verify`, {
+              method: 'GET',
+              headers: {
+                'Authorization': `Bearer ${storedToken}`,
+              },
+            });
+
+            if (response.status === 401 || response.status === 403) {
+              // Token is explicitly invalid — clear session
+              setIsAuthenticated(false);
+              setUser(null);
+              setToken(null);
+              localStorage.removeItem('vedic_auth_token');
+              localStorage.removeItem('vedic_user');
+              sessionStorage.removeItem('vedic_auth_token');
+              sessionStorage.removeItem('vedic_user');
+            }
+            // Any other status (200, 5xx, network error) → keep the session alive
+          } catch {
+            // Network/server error during background verify — stay logged in
           }
+        } else {
+          setIsLoading(false);
         }
       } catch (error) {
         console.error('Auth check error:', error);
-      } finally {
         setIsLoading(false);
       }
     };
