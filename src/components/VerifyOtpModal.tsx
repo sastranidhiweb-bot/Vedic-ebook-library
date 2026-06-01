@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { BACKEND_API_URL } from '../lib/config';
 
 interface VerifyOtpModalProps {
   open: boolean;
@@ -18,7 +19,7 @@ const VerifyOtpModal: React.FC<VerifyOtpModalProps> = ({ open, email, onClose, o
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('/api/auth/verify-otp', {
+      const res = await fetch(`${BACKEND_API_URL}/auth/verify-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, otp }),

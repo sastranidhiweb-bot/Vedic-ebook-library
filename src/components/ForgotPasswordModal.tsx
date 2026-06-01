@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { BACKEND_API_URL } from '../lib/config';
 
 interface ForgotPasswordModalProps {
   open: boolean;
@@ -17,7 +18,7 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ open, onClose
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('/api/auth/forgot-password', {
+      const res = await fetch(`${BACKEND_API_URL}/auth/forgot-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
