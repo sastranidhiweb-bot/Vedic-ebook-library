@@ -1,9 +1,8 @@
-'use client';
 import ForgotPasswordModal from './ForgotPasswordModal';
 import VerifyOtpModal from './VerifyOtpModal';
 import ResetPasswordModal from './ResetPasswordModal';
 import { useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'react-router-dom';
 import { BACKEND_API_URL } from '../lib/config';
 import { Eye, EyeOff, User, Lock, BookOpen, Mail, Phone, Calendar, AtSign } from 'lucide-react';
 
@@ -13,7 +12,7 @@ interface LoginProps {
 }
 
 const Login: React.FC<LoginProps> = ({ onLoginSuccess, noticeMessage }) => {
-  const searchParams = useSearchParams();
+  const [searchParams] = useSearchParams();
   const noticeFromQuery = searchParams?.get('notice') || undefined;
   const effectiveNotice = noticeMessage || noticeFromQuery;
   const [email, setEmail] = useState('');

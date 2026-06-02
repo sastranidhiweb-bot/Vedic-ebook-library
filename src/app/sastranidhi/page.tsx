@@ -1,4 +1,3 @@
-"use client";
 import { useState } from 'react';
 import HomeLanding from '../../components/HomeLanding';
 import Login from '../../components/Login';

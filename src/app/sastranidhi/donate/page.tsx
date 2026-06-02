@@ -1,10 +1,7 @@
-"use client";
-
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { load } from '@cashfreepayments/cashfree-js';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { Link, useNavigate } from 'react-router-dom';
 import { BookOpen } from 'lucide-react';
 
 type CashfreeCheckout = {
@@ -15,7 +12,7 @@ type CashfreeCheckout = {
 };
 
 export default function DonatePage() {
-  const router = useRouter();
+  const navigate = useNavigate();
   const [showThankYou, setShowThankYou] = useState(false);
   const [donateAmount, setDonateAmount] = useState(100);
   const [donorName, setDonorName] = useState('');
@@ -27,7 +24,7 @@ export default function DonatePage() {
 
   useEffect(() => {
     async function initSDK() {
-      const sdk = await load({ mode: process.env.NEXT_PUBLIC_CASHFREE_MODE === 'PROD' ? 'production' : 'sandbox' });
+      const sdk = await load({ mode: import.meta.env.VITE_CASHFREE_MODE === 'PROD' ? 'production' : 'sandbox' });
       setCashfree(sdk as CashfreeCheckout);
     }
     initSDK();
@@ -118,7 +115,7 @@ export default function DonatePage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
             <BookOpen style={{ color: '#fff', width: 30, height: 30 }} />
             <button
-              onClick={() => router.push('/sastranidhi')}
+              onClick={() => navigate('/sastranidhi')}
               style={{
                 background: 'transparent',
                 border: 'none',
@@ -137,7 +134,7 @@ export default function DonatePage() {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <button
-              onClick={() => router.push('/sastranidhi')}
+              onClick={() => navigate('/sastranidhi')}
               style={{
                 padding: '8px 16px',
                 background: 'linear-gradient(90deg, #c47a3f 0%, #a05a2c 100%)',
@@ -154,7 +151,7 @@ export default function DonatePage() {
             </button>
 
             <button
-              onClick={() => router.push('/')}
+              onClick={() => navigate('/')}
               style={{
                 padding: '8px 20px',
                 background: 'linear-gradient(90deg, #1abc9c 0%, #16a085 100%)',
@@ -227,7 +224,7 @@ export default function DonatePage() {
           </form>
 
           <div style={{ marginTop: 12, textAlign: 'center' }}>
-            <Link href="/sastranidhi" style={{ color: '#7a9c5c', textDecoration: 'underline' }}>
+            <Link to="/sastranidhi" style={{ color: '#7a9c5c', textDecoration: 'underline' }}>
               Back
             </Link>
           </div>

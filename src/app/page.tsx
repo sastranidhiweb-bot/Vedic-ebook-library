@@ -1,20 +1,18 @@
-'use client';
-
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import HomeLanding from '../components/HomeLanding';
 
 export default function Home() {
   const { isAuthenticated, isLoading } = useAuth();
-  const router = useRouter();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (isLoading) return;
     if (isAuthenticated) {
-      router.replace('/homePage');
+      navigate('/homePage', { replace: true });
     }
-  }, [isAuthenticated, isLoading, router]);
+  }, [isAuthenticated, isLoading, navigate]);
 
   if (isLoading || isAuthenticated) {
     return (
@@ -27,5 +25,5 @@ export default function Home() {
     );
   }
 
-  return <HomeLanding onLoginClick={() => router.push('/login')} />;
+  return <HomeLanding onLoginClick={() => navigate('/login')} />;
 }

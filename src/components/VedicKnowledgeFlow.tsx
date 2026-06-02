@@ -2,7 +2,7 @@
 import React, { useRef, useState, useCallback } from 'react';
 import ReactFlow, { Background, useReactFlow, ReactFlowProvider } from 'reactflow';
 import 'reactflow/dist/style.css';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 import dagre from 'dagre';
 
 // ─── Dagre layout ─────────────────────────────────────────────────────────────
@@ -327,7 +327,7 @@ function DiagramPanel(props: DiagramPanelProps) {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function VedicKnowledgeFlow() {
-  const router = useRouter();
+  const navigate = useNavigate();
   const vedicRef     = useRef<HTMLDivElement>(null);
   const vaisnavaRef  = useRef<HTMLDivElement>(null);
   const classicalRef = useRef<HTMLDivElement>(null);
@@ -402,7 +402,7 @@ export default function VedicKnowledgeFlow() {
   const onNodeClick = (_: any, node: any) => {
     const cat = nodeToCategory[node.id];
     if (cat) {
-      router.push(`/homePage?category=${encodeURIComponent(cat)}`);
+      navigate(`/homePage?category=${encodeURIComponent(cat)}`);
     }
   };
 
@@ -478,7 +478,7 @@ export default function VedicKnowledgeFlow() {
               </button>
             ))}
           </nav>
-          <button onClick={() => router.push('/login')} style={{ padding:'7px 18px', background:'linear-gradient(90deg,#1abc9c,#16a085)', border:'none', borderRadius:8, color:'#fff', fontSize:13, fontWeight:600, cursor:'pointer', display: isMobile ? 'none' : 'block' }}>
+          <button onClick={() => navigate('/login')} style={{ padding:'7px 18px', background:'linear-gradient(90deg,#1abc9c,#16a085)', border:'none', borderRadius:8, color:'#fff', fontSize:13, fontWeight:600, cursor:'pointer', display: isMobile ? 'none' : 'block' }}>
             Login / Sign Up
           </button>
           {isMobile && (
@@ -499,7 +499,7 @@ export default function VedicKnowledgeFlow() {
             {label}
           </button>
         ))}
-        <button onClick={() => router.push('/login')} style={{ margin:'20px 16px', padding:'11px 20px', background:'linear-gradient(90deg,#1abc9c,#16a085)', border:'none', borderRadius:8, color:'#fff', fontSize:14, fontWeight:600, cursor:'pointer' }}>
+        <button onClick={() => navigate('/login')} style={{ margin:'20px 16px', padding:'11px 20px', background:'linear-gradient(90deg,#1abc9c,#16a085)', border:'none', borderRadius:8, color:'#fff', fontSize:14, fontWeight:600, cursor:'pointer' }}>
           Login / Sign Up
         </button>
       </div>
@@ -574,7 +574,7 @@ export default function VedicKnowledgeFlow() {
             Thanks to donors: Ananya Sharma; Rohan Patel; Priya Singh; Vikram Das; Meera Joshi; Suresh Kumar; Kavita Rao; Amit Verma; Sneha Gupta; Rahul Mehta; Sunita Reddy; Arjun Nair; Deepa Chawla; Mohan Iyer; Pooja Sethi; Ajay Malhotra; Neha Jain; and all others for{' '}
             <span style={{ color:'#d2691e', fontWeight:700 }}>supporting</span> this site.
           </div>
-          <button onClick={() => router.push('/sastranidhi/donate')} style={{ padding:'12px 28px', background:'linear-gradient(90deg,#1976d2,#ffd700)', border:'none', borderRadius:10, color:'#fff', fontSize:16, fontWeight:700, cursor:'pointer', boxShadow:'0 2px 10px #1976d233', whiteSpace:'nowrap' }}>
+          <button onClick={() => navigate('/sastranidhi/donate')} style={{ padding:'12px 28px', background:'linear-gradient(90deg,#1976d2,#ffd700)', border:'none', borderRadius:10, color:'#fff', fontSize:16, fontWeight:700, cursor:'pointer', boxShadow:'0 2px 10px #1976d233', whiteSpace:'nowrap' }}>
             Donate
           </button>
         </div>

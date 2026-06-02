@@ -1,11 +1,8 @@
-'use client';
-
 import { User, PanelLeftOpen, PanelLeftClose, Settings as SettingsIcon, ZoomIn, ZoomOut } from 'lucide-react';
 import Settings from './Settings';
 import { useState } from 'react';
 import UserProfile from './UserProfile';
 import { useAuth } from '../contexts/AuthContext';
-import { useRouter } from 'next/navigation';
 
 interface SideNavProps {
   selectedLanguage: string;
@@ -36,7 +33,6 @@ const SideNav: React.FC<SideNavProps> = ({
   const { user: authUser } = useAuth();
   const [showProfile, setShowProfile] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const router = useRouter();
 
   // Change password handler
   const handleChangePassword = async (oldPassword: string, newPassword: string, confirmPassword: string) => {

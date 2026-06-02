@@ -135,22 +135,26 @@ class OptimizedContentCache {
   }
 
   estimateHeadingPagesFromHtml(htmlContent = '', wordsPerPage = 500) {
+    // Use the same paragraph-splitting logic as paginateHtmlContent so that
+    // chapter page numbers exactly match the reader's pagination.
+    const avgWordsPerParagraph = 50;
+    const paragraphsPerPage = Math.max(1, Math.floor(wordsPerPage / avgWordsPerParagraph));
+
+    const paragraphs = htmlContent.split(/<\/p>\s*<p[^>]*>|<\/div>\s*<div[^>]*>/i);
     const headingMap = new Map();
     const headingRegex = /<(h[1-6])[^>]*>(.*?)<\/\1>/gi;
-    let match;
-    let lastIndex = 0;
-    let wordCount = 0;
 
-    while ((match = headingRegex.exec(htmlContent)) !== null) {
-      const beforeHeading = htmlContent.slice(lastIndex, match.index);
-      wordCount += this.htmlToText(beforeHeading).split(/\s+/).filter(Boolean).length;
-
-      const headingText = this.htmlToText(match[2]);
-      if (headingText && !headingMap.has(headingText)) {
-        headingMap.set(headingText, Math.max(1, Math.floor(wordCount / wordsPerPage) + 1));
+    for (let i = 0; i < paragraphs.length; i++) {
+      const para = paragraphs[i];
+      headingRegex.lastIndex = 0;
+      let match;
+      while ((match = headingRegex.exec(para)) !== null) {
+        const headingText = this.htmlToText(match[2]);
+        if (headingText && !headingMap.has(headingText)) {
+          const pageNumber = Math.floor(i / paragraphsPerPage) + 1;
+          headingMap.set(headingText, pageNumber);
+        }
       }
-
-      lastIndex = headingRegex.lastIndex;
     }
 
     return Array.from(headingMap.entries()).map(([heading, page]) => ({

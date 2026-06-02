@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { BACKEND_API_URL } from '../lib/config';
 
 interface ResetPasswordModalProps {
   open: boolean;
@@ -28,7 +27,7 @@ const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({ open, email, ot
       return;
     }
     try {
-      const res = await fetch(`${BACKEND_API_URL}/auth/reset-password-otp`, {
+      const res = await fetch('/api/auth/reset-password-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, otp, newPassword }),

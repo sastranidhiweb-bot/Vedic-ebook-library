@@ -1,6 +1,6 @@
 {
-  "slate": {
+  "appsail": {
     "build": "npm install && npm run build",
-    "serve_path": "out"
+    "start": "node server.js"
   }
 }
