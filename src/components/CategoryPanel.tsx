@@ -26,13 +26,14 @@ interface CategoryPanelProps {
   onFoldAll?: () => void;
   onUnfoldAll?: () => void;
   onChapterSelect?: (pageNumber: number) => void;
+  currentPage?: number;
   refreshKey?: number;
   onClose?: () => void;
 }
 
 const API_URL = `${BACKEND_API_URL}/categories/tree`;
 
-const CategoryPanel: React.FC<CategoryPanelProps & { bookChapters?: { text: string; wordIndex: number }[] }> = ({
+const CategoryPanel: React.FC<CategoryPanelProps & { bookChapters?: { text: string; wordIndex: number }[]; currentPage?: number }> = ({
   selectedLanguage,
   languageConfig,
   bookId,
@@ -238,21 +239,54 @@ const CategoryPanel: React.FC<CategoryPanelProps & { bookChapters?: { text: stri
                         </button>
                       )}
                     </span>
-                    {/* Show chapters if this book is selected, expanded, and bookChapters exist */}
+                    {/* Chapter list */}
                     {isSelected && isExpanded && rest.bookChapters && rest.bookChapters.length > 0 && (
-                      <div style={{ marginTop: 8, marginLeft: 16 }}>
-                        {rest.bookChapters.map((chapter, cidx) => (
-                          <div
-                            key={cidx}
-                            style={{ cursor: 'pointer', color: 'var(--accent)', fontSize: '0.95em', padding: '2px 0' }}
-                            onClick={e => {
-                              e.stopPropagation();
-                              if (onChapterSelect) onChapterSelect(chapter.wordIndex + 1);
-                            }}
-                          >
-                            {chapter.text}
-                          </div>
-                        ))}
+                      <div style={{ marginTop: 6, marginLeft: 0, borderLeft: '2px solid var(--accent)', marginRight: 4 }}>
+                        {rest.bookChapters.map((chapter, cidx) => {
+                          const chapterPage = chapter.wordIndex + 1;
+                          const isActiveChapter = rest.currentPage !== undefined &&
+                            rest.currentPage >= chapterPage &&
+                            (cidx === rest.bookChapters!.length - 1 || rest.currentPage < rest.bookChapters![cidx + 1].wordIndex + 1);
+                          return (
+                            <div
+                              key={cidx}
+                              onClick={e => {
+                                e.stopPropagation();
+                                if (onChapterSelect) onChapterSelect(chapterPage);
+                              }}
+                              style={{
+                                cursor: 'pointer',
+                                padding: '6px 10px 6px 14px',
+                                fontSize: '0.82em',
+                                lineHeight: 1.4,
+                                borderRadius: '0 6px 6px 0',
+                                marginBottom: 2,
+                                marginRight: 4,
+                                transition: 'all 0.15s ease',
+                                background: isActiveChapter ? 'var(--accent)' : 'transparent',
+                                color: isActiveChapter ? 'var(--bg)' : 'var(--text)',
+                                fontWeight: isActiveChapter ? 700 : 400,
+                                borderLeft: isActiveChapter ? '3px solid var(--accent-deep)' : '3px solid transparent',
+                                marginLeft: -2,
+                              }}
+                              onMouseEnter={e => {
+                                if (!isActiveChapter) {
+                                  (e.currentTarget as HTMLDivElement).style.background = 'color-mix(in srgb, var(--accent) 15%, transparent)';
+                                  (e.currentTarget as HTMLDivElement).style.color = 'var(--accent)';
+                                }
+                              }}
+                              onMouseLeave={e => {
+                                if (!isActiveChapter) {
+                                  (e.currentTarget as HTMLDivElement).style.background = 'transparent';
+                                  (e.currentTarget as HTMLDivElement).style.color = 'var(--text)';
+                                }
+                              }}
+                            >
+                              <span style={{ opacity: 0.5, marginRight: 6, fontSize: '0.85em' }}>{cidx + 1}.</span>
+                              {chapter.text}
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
                   </div>

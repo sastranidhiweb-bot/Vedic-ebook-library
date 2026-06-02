@@ -1374,6 +1374,7 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
                 onFoldAll={foldAllCategories}
                 onUnfoldAll={unfoldAllCategories}
                 bookChapters={bookChapters}
+                currentPage={currentPage}
                 onChapterSelect={(pageNumber) => {
                   console.log('EBookReader: Navigating to chapter page', pageNumber);
                   setCurrentPage(pageNumber);
