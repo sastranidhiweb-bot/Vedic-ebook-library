@@ -21,6 +21,16 @@ backend/node_modules/
 /dist
 /dist-ssr
 
+# Vite cache
+.vite/
+
+# Next.js leftovers (not deleted yet)
+.next/
+next-env.d.ts
+
+# Temp files
+temp_*.html
+
 # misc
 .DS_Store
 *.pem
@@ -55,6 +65,7 @@ pids
 
 # Deployment directory (keep this local)
 vedic-ebooks-deploy/
+backend/deployment/
 
 # PM2 logs and process files
 *.pm2
