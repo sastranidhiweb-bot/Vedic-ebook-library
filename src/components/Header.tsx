@@ -1,7 +1,8 @@
 'use client';
 
-import { Upload, List as ListIcon, Users, Link2, ZoomIn, ZoomOut, Settings as SettingsIcon, User, Menu, LogOut, X } from 'lucide-react';
+import { Upload, List as ListIcon, Users, Link2, ZoomIn, ZoomOut, Settings as SettingsIcon, User, Menu, LogOut, X, Home } from 'lucide-react';
 import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import BookListModal from './BookListModal';
 import UnifiedBookUploadModal from './UnifiedBookUploadModal';
 import { fetchBooks } from '../lib/bookStorage';
@@ -33,6 +34,7 @@ const Header: React.FC<HeaderProps> = ({
   onZoomIn,
   onZoomOut,
 }) => {
+  const navigate = useNavigate();
   const { user: authUser } = useAuth();
   const [showBooksModal, setShowBooksModal]       = useState(false);
   const [showUploadModal, setShowUploadModal]     = useState(false);
@@ -144,7 +146,7 @@ const Header: React.FC<HeaderProps> = ({
                 style={{
                   color: 'var(--header-text)',
                   fontSize: '0.95rem',
-                  fontFamily: '"Noto Serif Devanagari", Georgia, serif',
+                  fontFamily: '"Gentium Plus", "Noto Serif Devanagari", Georgia, serif',
                 }}
               >
                 Vaiṣṇava-Mañjūṣā
@@ -165,6 +167,16 @@ const Header: React.FC<HeaderProps> = ({
 
           {/* ── Spacer ──────────────────────────────────────── */}
           <div style={{ flex: 1 }} />
+
+          {/* ── Home button */}
+          <button
+            onClick={() => navigate({ pathname: '/homePage', search: '' }, { replace: true })}
+            className="hidden md:inline-flex icon-btn"
+            title="Home"
+            style={{ width: 32, height: 32 }}
+          >
+            <Home className="w-3.5 h-3.5" />
+          </button>
 
           {/* ── Language pills — desktop only ───────────────── */}
           {languageConfig && onLanguageToggle && (
@@ -325,6 +337,15 @@ const Header: React.FC<HeaderProps> = ({
                 </div>
               </div>
             )}
+
+            {/* Home action */}
+            <button
+              onClick={() => { navigate({ pathname: '/homePage', search: '' }, { replace: true }); setShowMobileMenu(false); }}
+              className="icon-btn flex items-center gap-1.5"
+              style={{ padding: '0.3rem 0.8rem', fontSize: '0.8rem', color: 'var(--header-text)' }}
+            >
+              <Home className="w-4 h-4" /> Home
+            </button>
 
             {/* Zoom controls */}
             <div className="mb-3">

@@ -78,7 +78,7 @@ const Settings: React.FC<SettingsProps> = ({ onClose }) => {
           <ISKCONLogo size={40} />
           <h2
             className="text-xl font-bold text-center"
-            style={{ color: 'var(--modal-text)', fontFamily: '"Noto Serif Devanagari", Georgia, serif' }}
+            style={{ color: 'var(--modal-text)', fontFamily: '"Gentium Plus", "Noto Serif Devanagari", Georgia, serif' }}
           >
             Preferences
           </h2>

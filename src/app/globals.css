@@ -644,7 +644,7 @@
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: "Noto Serif Devanagari", "Times New Roman", Georgia, serif;
+  font-family: "Gentium Plus", "Noto Serif Devanagari", "Times New Roman", Georgia, serif;
   line-height: 1.7;
   font-size: 16px;
   transition: background 0.3s ease, color 0.3s ease;
@@ -764,7 +764,7 @@ body {
 
 /* ── Sanskrit Typography ──────────────────────────────────── */
 .sanskrit-text {
-  font-family: "Noto Serif Devanagari", "Times New Roman", serif;
+  font-family: "Gentium Plus", "Noto Serif Devanagari", "Times New Roman", serif;
   font-size: 1.1em;
   line-height: 1.9;
 }

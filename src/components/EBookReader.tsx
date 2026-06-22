@@ -79,9 +79,9 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
   // Initialize responsive font size based on screen width
   const getDefaultFontSize = () => {
     if (typeof window !== 'undefined') {
-      return 22; // 22px for both mobile and desktop for better readability
+      return 18; // 18px default for both mobile and desktop
     }
-    return 22; // Default for SSR
+    return 18; // Default for SSR
   };
   
   const [fontSize, setFontSize] = useState(getDefaultFontSize());
@@ -104,6 +104,12 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
   const [isContentHtml, setIsContentHtml] = useState(false);
   const lastLoadedPageRef = useRef<number>(1);
   const bookmarkLoadedRef = useRef<boolean>(false);
+  // Continuous (infinite) scroll reading state — pages are appended as the
+  // user scrolls instead of replacing the view on every navigation.
+  const [loadedPages, setLoadedPages] = useState<{ page: number; html: string }[]>([]);
+  const isAppendingRef = useRef(false);
+  const scrollThrottleRef = useRef(0);
+  const pendingScrollTopRef = useRef(false);
   // Chapters state
   const [bookChapters, setBookChapters] = useState<{ text: string; wordIndex: number }[]>([]);
 
@@ -153,6 +159,10 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
       console.log('fetchBookContent result@:', result);
       if (result) {
         setContent(result.content);
+        // Reset the continuous-scroll buffer to start at this page. Further
+        // pages get appended as the user scrolls (see loadNextPage).
+        setLoadedPages([{ page: currentPage, html: result.content }]);
+        pendingScrollTopRef.current = true;
         if (result.pagination) {
           setPaginationInfo(result.pagination);
           setIsContentHtml(result.pagination.format === 'html');
@@ -186,6 +196,75 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
       setIsLoading(false);
     }
   }, [bookId, currentPage, isLoading]);
+
+  // Append the next page to the continuous-scroll buffer (Word-document style
+  // reading). Triggered when the reader scrolls near the bottom.
+  const loadNextPage = useCallback(async () => {
+    if (!bookId || isAppendingRef.current || isLoading) return;
+    const lastPage = loadedPages.length
+      ? loadedPages[loadedPages.length - 1].page
+      : currentPage;
+    const maxPages = paginationInfo?.totalPages;
+    if (maxPages && lastPage >= maxPages) return;
+
+    isAppendingRef.current = true;
+    try {
+      const nextPage = lastPage + 1;
+      const result = await fetchBookContent(bookId, nextPage, 'html');
+      if (result && result.content) {
+        setLoadedPages(prev => {
+          if (prev.some(p => p.page === nextPage)) return prev;
+          return [...prev, { page: nextPage, html: result.content }];
+        });
+      }
+    } catch (err) {
+      console.error('Error appending next page:', err);
+    } finally {
+      isAppendingRef.current = false;
+    }
+  }, [bookId, loadedPages, currentPage, paginationInfo, isLoading]);
+  // Scroll handler for the reading area: appends the next page near the bottom
+  // and keeps the page indicator/progress in sync with the visible page.
+  const handleContentScroll = useCallback(() => {
+    const el = contentRef.current;
+    if (!el) return;
+
+    // Append the next page as we approach the bottom of the loaded content.
+    if (el.scrollHeight - el.scrollTop - el.clientHeight < 800) {
+      loadNextPage();
+    }
+
+    // Throttle the visible-page tracking to avoid excessive state updates.
+    const now = Date.now();
+    if (now - scrollThrottleRef.current < 150) return;
+    scrollThrottleRef.current = now;
+
+    const containerTop = el.getBoundingClientRect().top;
+    const anchors = el.querySelectorAll<HTMLElement>('.vb-page-anchor');
+    let visiblePage = currentPage;
+    anchors.forEach(anchor => {
+      if (anchor.getBoundingClientRect().top - containerTop <= 120) {
+        const p = parseInt(anchor.dataset.page || '0', 10);
+        if (p) visiblePage = p;
+      }
+    });
+    if (visiblePage !== currentPage) {
+      setCurrentPage(visiblePage);
+    }
+  }, [loadNextPage, currentPage]);
+
+  // Smoothly scroll to a page that is already present in the loaded buffer.
+  // Returns true if the page was found (and scrolled to), false otherwise.
+  const scrollToPageAnchor = useCallback((page: number) => {
+    const el = contentRef.current;
+    if (!el) return false;
+    const anchor = el.querySelector<HTMLElement>(`.vb-page-anchor[data-page="${page}"]`);
+    if (!anchor) return false;
+    const containerTop = el.getBoundingClientRect().top;
+    const top = el.scrollTop + (anchor.getBoundingClientRect().top - containerTop);
+    el.scrollTo({ top, behavior: 'smooth' });
+    return true;
+  }, []);
 
   // After navigation from search result card, scroll to and highlight the first match
   useEffect(() => {
@@ -825,7 +904,15 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
   }, [content, wordsPerPage]);
 
   const totalPages = paginationInfo?.totalPages || pages.length;
-  const currentPageContent = paginationInfo ? content : (pages[currentPage - 1] || '');
+  // Continuous-scroll content: concatenate every loaded page, prefixing each
+  // with an invisible anchor so the scroll handler can track the visible page.
+  const currentPageContent = useMemo(() => {
+    if (!paginationInfo) return pages[currentPage - 1] || '';
+    if (loadedPages.length === 0) return content;
+    return loadedPages
+      .map(p => `<span class="vb-page-anchor" data-page="${p.page}" style="display:block;height:0;overflow:hidden;"></span>${p.html}`)
+      .join('\n');
+  }, [paginationInfo, pages, currentPage, loadedPages, content]);
   const displayTitle = bookTitle || title || 'this book';
 
   // Update highlighted content when page content changes or search query changes
@@ -849,6 +936,12 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
     });
     
     if (bookId && currentPage !== lastLoadedPageRef.current) {
+      // If the page is already present in the continuous-scroll buffer (e.g. the
+      // user simply scrolled into it), don't reload/reset — just sync the ref.
+      if (loadedPages.some(p => p.page === currentPage)) {
+        lastLoadedPageRef.current = currentPage;
+        return;
+      }
       console.log(`=== PAGE RELOAD: ${lastLoadedPageRef.current} → ${currentPage} ===`);
       console.log('Current states:', { 
         bookId, 
@@ -861,7 +954,34 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
       // Call loadContent directly instead of through dependency
       loadContent();
     }
-  }, [currentPage, bookId]);
+  }, [currentPage, bookId, loadedPages]);
+
+  // After a fresh (reset) load, scroll the reading area back to the top so the
+  // newly selected page/chapter starts from the beginning. Skipped when a search
+  // navigation is in progress (search handles its own scroll-to-match).
+  useEffect(() => {
+    if (pendingScrollTopRef.current && loadedPages.length > 0) {
+      pendingScrollTopRef.current = false;
+      const searchActive = isSearchMode || !!lastSearchWord || !!pendingSearchScroll;
+      if (contentRef.current && !searchActive) {
+        contentRef.current.scrollTop = 0;
+      }
+    }
+  }, [loadedPages]);
+
+  // If the loaded content doesn't fill the viewport (so there's nothing to
+  // scroll), eagerly append the next page so continuous reading still works
+  // on tall screens / short pages.
+  useEffect(() => {
+    const el = contentRef.current;
+    if (!el || loadedPages.length === 0 || isLoading) return;
+    const timer = setTimeout(() => {
+      if (el.scrollHeight <= el.clientHeight + 40) {
+        loadNextPage();
+      }
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [loadedPages, isLoading, loadNextPage]);
 
   // Auto-scroll to current search result when page content updates
   useEffect(() => {
@@ -988,7 +1108,7 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
   // Handle responsive font size on window resize
   useEffect(() => {
     const handleResize = () => {
-      const newDefaultSize = 22;
+      const newDefaultSize = 18;
       if (Math.abs(fontSize - getDefaultFontSize()) <= 2) {
         setFontSize(newDefaultSize);
       }
@@ -1020,6 +1140,10 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
       const newPage = currentPage + 1;
       console.log('Setting next page from', currentPage, 'to', newPage);
       setCurrentPage(newPage);
+      // If the page is already in the continuous-scroll buffer, just glide to it.
+      if (loadedPages.some(p => p.page === newPage)) {
+        requestAnimationFrame(() => scrollToPageAnchor(newPage));
+      }
       // Ensure bookmark doesn't override this navigation
       if (!bookmarkLoadedRef.current) {
         bookmarkLoadedRef.current = true;
@@ -1044,6 +1168,10 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
       bookmarkLoadedRef.current = true;
       
       setCurrentPage(newPage);
+      // If the page is already in the continuous-scroll buffer, just glide to it.
+      if (loadedPages.some(p => p.page === newPage)) {
+        requestAnimationFrame(() => scrollToPageAnchor(newPage));
+      }
       console.log('setCurrentPage called with:', newPage);
     } else {
       console.log('Cannot go to previous page, already at page 1');
@@ -1092,7 +1220,7 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
         decreaseFontSize();
       } else if (event.key === '0') {
         event.preventDefault();
-        setFontSize(22); // Reset to default
+        setFontSize(18); // Reset to default
       }
     };
 
@@ -1176,6 +1304,9 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
       const page = parseInt(pageInputValue);
       if (page >= 1 && page <= totalPages) {
         setCurrentPage(page);
+        if (loadedPages.some(p => p.page === page)) {
+          requestAnimationFrame(() => scrollToPageAnchor(page));
+        }
         e.currentTarget.blur();
       } else {
         // Reset to current page if invalid
@@ -1188,6 +1319,9 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
     const page = parseInt(pageInputValue);
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
+      if (loadedPages.some(p => p.page === page)) {
+        requestAnimationFrame(() => scrollToPageAnchor(page));
+      }
     } else {
       // Reset to current page if invalid
       setPageInputValue(currentPage.toString());
@@ -1313,8 +1447,8 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
   }
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
-      <div style={{ flex: '1 1 auto', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg)', overflow: 'hidden' }}>
+      <div style={{ flex: '1 1 auto', display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
         {/* Header Bar */}
         <Header
           user={user}
@@ -1379,6 +1513,9 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
                   console.log('EBookReader: Navigating to chapter page', pageNumber);
                   setCurrentPage(pageNumber);
                   setPageInputValue(pageNumber.toString());
+                  if (loadedPages.some(p => p.page === pageNumber)) {
+                    requestAnimationFrame(() => scrollToPageAnchor(pageNumber));
+                  }
                   if (isMobile) setIsCategoryPanelVisible(false);
                 }}
                 refreshKey={categoryPanelRefreshKey}
@@ -1786,7 +1923,7 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
                     </div>
 
                     {/* Book Content */}
-                    <div ref={contentRef} className="flex-1 overflow-y-auto p-3 sm:p-6 ebook-reader-book-content" style={{ background: 'var(--book-content-bg)', color: 'var(--book-content-text)' }}>
+                    <div ref={contentRef} onScroll={handleContentScroll} className="flex-1 overflow-y-auto p-3 sm:p-6 ebook-reader-book-content" style={{ background: 'var(--book-content-bg)', color: 'var(--book-content-text)' }}>
                       <div
                         className="prose max-w-none leading-relaxed"
                         style={{ fontSize: `${fontSize}px`, lineHeight: lineHeight, color: 'var(--book-content-text)' }}
@@ -1868,7 +2005,7 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
                     color: 'var(--accent)', fontSize: '1.2rem',
                   }}>✦</div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <h2 style={{ color: 'var(--panel-header-color)', fontSize: '1.2rem', fontWeight: 700, marginBottom: '0.35rem', fontFamily: '"Noto Serif Devanagari", Georgia, serif' }}>
+                    <h2 style={{ color: 'var(--panel-header-color)', fontSize: '1.2rem', fontWeight: 700, marginBottom: '0.35rem', fontFamily: '"Gentium Plus", "Noto Serif Devanagari", Georgia, serif' }}>
                       Welcome to Your Vedic Library
                     </h2>
                     <p style={{ color: 'var(--panel-header-color)', opacity: 0.78, fontSize: '0.82rem', lineHeight: 1.6 }}>

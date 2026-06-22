@@ -20,6 +20,13 @@ const HomePageContent = () => {
   const isGuestReading = !isAuthenticated && !!activeBookId;
 
   useEffect(() => {
+    if (!bookIdFromQuery && !categoryFromQuery) {
+      setSelectedBook(null);
+      setCurrentView('reading');
+    }
+  }, [bookIdFromQuery, categoryFromQuery]);
+
+  useEffect(() => {
     if (!isGuestReading) {
       setIsGuestSessionExpired(false);
       return;

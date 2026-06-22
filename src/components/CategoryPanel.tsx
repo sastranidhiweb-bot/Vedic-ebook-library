@@ -90,11 +90,14 @@ const CategoryPanel: React.FC<CategoryPanelProps & { bookChapters?: { text: stri
   // (Removed duplicate userPrivileges and userPrivilege declarations. Only use state variable.)
 
   // Filter categories/books by user privilege (only after privileges loaded)
-  const filteredCategories = (userPrivileges ? categories.map(category => ({
+  // Memoized so the reference is stable across renders. Without this, the
+  // auto-expand effects below (which depend on filteredCategories) would re-run
+  // on every render and immediately re-expand a node the user just collapsed.
+  const filteredCategories = useMemo(() => (userPrivileges ? categories.map(category => ({
     ...category,
     books: category.books ? category.books.filter((book: any) => userPrivileges.includes(book.type)) : [],
     children: category.children ? category.children : [],
-  })) : []);
+  })) : []), [categories, userPrivileges]);
 
 
   // Controlled expansion state for the MUI TreeView
@@ -764,7 +767,15 @@ const CategoryPanel: React.FC<CategoryPanelProps & { bookChapters?: { text: stri
                   background: 'var(--card)',
                   color: 'var(--text)',
                   '& .MuiTreeItem-label': { color: 'var(--text)', fontSize: '0.875rem' },
-                  '& .MuiTreeItem-content': { '&:hover': { background: 'var(--card-hover)' } },
+                  '& .MuiTreeItem-content': {
+                    background: 'transparent',
+                    '&:hover': { background: 'transparent' },
+                    // Don't highlight the whole node (incl. its chapter list) when selected/focused
+                    '&.Mui-selected, &.Mui-selected.Mui-focused, &.Mui-focused, &.Mui-selected:hover': {
+                      background: 'transparent',
+                    },
+                    '&.Mui-selected:hover, &.Mui-focused:hover': { background: 'transparent' },
+                  },
                   '& .MuiTreeItem-iconContainer svg': { color: 'var(--sidenav-icon)' },
                 }}
               >
