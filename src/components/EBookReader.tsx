@@ -1494,6 +1494,11 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
               } : {
                 display: 'flex',
                 flexDirection: 'column',
+                minHeight: 0,
+                flex: '0 0 18rem',
+                width: '18rem',
+                maxHeight: '100%',
+                overflow: 'hidden',
               }}
             >
               <CategoryPanel

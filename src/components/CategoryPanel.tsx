@@ -670,6 +670,9 @@ const CategoryPanel: React.FC<CategoryPanelProps & { bookChapters?: { text: stri
         borderRight: '1px solid var(--border)',
         width: '18rem',
         minWidth: 0,
+        flex: '1 1 0',
+        minHeight: 0,
+        overflow: 'hidden',
       }}
     >
       {/* Panel Header */}
@@ -752,7 +755,7 @@ const CategoryPanel: React.FC<CategoryPanelProps & { bookChapters?: { text: stri
       </div>
 
       {/* Content Area */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 min-h-0 overflow-y-auto category-panel-body" style={{ minHeight: 0, maxHeight: '100%' }}>
         {activeTab === 'categories' && (
           <>
             {loading || !userPrivileges ? (
