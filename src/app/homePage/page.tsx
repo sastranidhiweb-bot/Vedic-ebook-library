@@ -4,10 +4,16 @@ import { useAuth } from '../../contexts/AuthContext';
 import EBookReader from '../../components/EBookReader';
 import BookDebugInfo from '../../components/BookDebugInfo';
 import { Book } from '../../lib/bookStorage';
+import { usePageMeta } from '../../lib/usePageMeta';
 
 const HomePageContent = () => {
   const { isAuthenticated, user, logout, isLoading } = useAuth();
   const navigate = useNavigate();
+
+  usePageMeta(
+    'Library & Reader',
+    'Browse and read Vedic e-books by category, author, and title with bookmarks, highlights, and Sanskrit support.'
+  );
   const [searchParams] = useSearchParams();
   const [currentView, setCurrentView] = useState<'reading' | 'upload' | 'debug'>('reading');
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);

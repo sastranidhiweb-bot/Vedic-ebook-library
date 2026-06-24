@@ -1,0 +1,9 @@
+# Allow all crawlers to index the public site
+User-agent: *
+Allow: /
+
+# Keep private/admin and auth pages out of the index
+Disallow: /login
+
+# Replace your-domain.com with your real production domain
+Sitemap: https://your-domain.com/sitemap.xml

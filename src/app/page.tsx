@@ -2,10 +2,16 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import HomeLanding from '../components/HomeLanding';
+import { usePageMeta } from '../lib/usePageMeta';
 
 export default function Home() {
   const { isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
+
+  usePageMeta(
+    'Online E-Books Reader',
+    'Read Vedic scriptures, spiritual texts, and sacred literature online with a beautiful reading experience and Sanskrit support.'
+  );
 
   useEffect(() => {
     if (isLoading) return;

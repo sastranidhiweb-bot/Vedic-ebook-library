@@ -2,10 +2,13 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import Login from '../../components/Login';
+import { usePageMeta } from '../../lib/usePageMeta';
 
 const LoginPageContent = () => {
   const { isAuthenticated, login, isLoading } = useAuth();
   const navigate = useNavigate();
+
+  usePageMeta('Sign In', 'Sign in to your Vedic Library account to access your books, bookmarks, and highlights.');
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) {

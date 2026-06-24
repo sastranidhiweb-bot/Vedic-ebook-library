@@ -3,6 +3,7 @@ import axios from 'axios';
 import { load } from '@cashfreepayments/cashfree-js';
 import { Link, useNavigate } from 'react-router-dom';
 import { BookOpen } from 'lucide-react';
+import { usePageMeta } from '../../../lib/usePageMeta';
 
 type CashfreeCheckout = {
   checkout: (options: {
@@ -15,6 +16,8 @@ export default function DonatePage() {
   const navigate = useNavigate();
   const [showThankYou, setShowThankYou] = useState(false);
   const [donateAmount, setDonateAmount] = useState(100);
+
+  usePageMeta('Donate', 'Support the Vedic Library by donating to help preserve and share sacred Vedic scriptures online.');
   const [donorName, setDonorName] = useState('');
   const [donorEmail, setDonorEmail] = useState('');
   const [donorPhone, setDonorPhone] = useState('');
