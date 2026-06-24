@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { ChevronLeft, ChevronRight, BookOpen, ArrowLeft, Settings, SkipForward, SkipBack, AlertCircle, Bookmark, BookmarkCheck, User, Upload, Bug, ChevronDown, Plus, FileText, Search } from 'lucide-react';
 import { updateBookProgress, fetchBookContent, fetchBooks, Book } from '../lib/bookStorage';
+import { BACKEND_API_URL } from '../lib/config';
 import { useAuth } from '../contexts/AuthContext';
 import Header from './Header';
 import CategoryPanel from './CategoryPanel';
@@ -410,13 +411,15 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
       console.log('🔍 Performing full book search for:', query);
       console.log('📖 Book ID:', bookId);
       setIsLoading(true);
+      const token = localStorage.getItem('vedic_auth_token') || sessionStorage.getItem('vedic_auth_token');
       
-      const apiUrl = `/api/books/${bookId}/search?q=${encodeURIComponent(query)}&limit=200`;
+      const apiUrl = `${BACKEND_API_URL}/books/${bookId}/search?q=${encodeURIComponent(query)}&limit=200`;
       console.log('📡 Calling search API:', apiUrl);
       const response = await fetch(apiUrl, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
       });
       
@@ -428,7 +431,18 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
         throw new Error(`Search failed: ${response.status} ${response.statusText}`);
       }
       
-      const searchData = await response.json();
+      const rawBody = await response.text();
+      let searchData: any;
+      try {
+        searchData = JSON.parse(rawBody);
+      } catch (parseError) {
+        console.error('❌ Search API did not return JSON:', {
+          apiUrl,
+          bodyPreview: rawBody.slice(0, 300),
+          parseError,
+        });
+        throw new Error('Search API returned non-JSON response');
+      }
       console.log('📊 Search data received:', searchData);
       
       if (searchData.success && searchData.data.results) {
@@ -985,7 +999,9 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
 
   // Auto-scroll to current search result when page content updates
   useEffect(() => {
-    if (isSearchMode && searchResults.length > 0 && highlightedContent && currentSearchIndex < searchResults.length) {
+    // The reading pane is not rendered while search-results mode is open, so
+    // skip DOM scrolling attempts until normal reading mode is active.
+    if (!isSearchMode && searchResults.length > 0 && highlightedContent && currentSearchIndex < searchResults.length) {
       const currentPageIndex = currentPage - 1;
       const currentResult = searchResults[currentSearchIndex];
       const currentResultPage = currentResult?.pageIndex;
