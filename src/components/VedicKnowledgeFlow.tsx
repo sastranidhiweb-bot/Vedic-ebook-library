@@ -397,6 +397,17 @@ export default function VedicKnowledgeFlow() {
     bheda_bhaskara: 'Bheda-abheda (Bhaskara)',    // DB: no macron on Bhaskara
     bheda_nimbarka: 'Bheda-abheda (Nimbarka)',    // DB: no macron on Nimbarka
     acintya:        'Acintya Bheda-abheda (Lord Caitanya)',
+    // ── Vaiṣṇava Mañjūṣa sub-diagram (names from seedNewCategoryTrees.js) ──
+    vr:             'Vaishnava Manjusha',
+    pp:             'Parampara',
+    s1:             'Śrī Sampradāya',
+    s2:             'Mādhava Sampradāya',
+    s3:             'Rudra Sampradāya',
+    s4:             'Kumāra Sampradāya',
+    // ── Classical Literature sub-diagram ──
+    cl:             'Classical Literature',
+    sk:             'Sanskrit',
+    re:             'Regional',
   };
 
   const onNodeClick = (_: any, node: any) => {
@@ -547,6 +558,7 @@ export default function VedicKnowledgeFlow() {
             defaultZoom={0.85}
             minZoom={0.2}
             maxZoom={2}
+            onNodeClick={onNodeClick}
             containerStyle={{ ...diagBg, border:'2px solid #1abc9c' }}
             noScroll
           />
@@ -563,6 +575,7 @@ export default function VedicKnowledgeFlow() {
             defaultZoom={0.9}
             minZoom={0.2}
             maxZoom={2}
+            onNodeClick={onNodeClick}
             containerStyle={{ ...diagBg, border:'2px solid #1abc9c' }}
             noScroll
           />
