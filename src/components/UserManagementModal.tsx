@@ -74,88 +74,96 @@ const UserManagementModal: React.FC<UserManagementModalProps> = ({ open, onClose
     <div
       className="fixed inset-0 z-50 flex items-center justify-center"
       style={{
-        background: 'linear-gradient(120deg, rgba(30,32,38,0.32) 0%, rgba(224,231,255,0.18) 100%)',
+        background: 'var(--modal-overlay)',
         backdropFilter: 'blur(10px)',
         WebkitBackdropFilter: 'blur(10px)',
         animation: 'modalFadeIn 0.25s cubic-bezier(.4,2,.6,1)'
       }}
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
-        className="rounded-2xl shadow-2xl px-10 py-8 w-full max-w-6xl relative border border-amber-100"
+        className="vb-modal px-10 py-8 w-full max-w-6xl relative"
         style={{
-          background: 'linear-gradient(120deg, #fff 60%, #fef6e4 100%)',
-          color: '#222',
-          boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.18)',
           transform: 'scale(1)',
           transition: 'transform 0.2s',
         }}
       >
         <button
-          className="absolute top-4 right-4 text-gray-400 hover:text-red-500 text-2xl font-bold transition-colors"
+          className="absolute top-4 right-4 text-2xl font-bold transition-colors"
+          style={{ color: 'var(--text-muted)', lineHeight: 1 }}
           onClick={onClose}
           title="Close"
         >
           &times;
         </button>
-        <h2 className="text-3xl font-extrabold mb-6 text-center tracking-tight text-amber-700 drop-shadow-sm" style={{ letterSpacing: '-0.01em' }}>
+        <h2
+          className="text-3xl font-extrabold mb-6 text-center tracking-tight"
+          style={{ color: 'var(--accent-deep)', letterSpacing: '-0.01em', fontFamily: '"Gentium Plus", "Noto Serif Devanagari", Georgia, serif' }}
+        >
           User Management
         </h2>
-        <hr className="mb-6 border-amber-100" />
+        <hr className="mb-6" style={{ borderColor: 'var(--border)' }} />
         {loading ? (
-          <div className="text-center text-lg text-yellow-600">Loading users...</div>
+          <div className="text-center text-lg" style={{ color: 'var(--text-light)' }}>Loading users...</div>
         ) : error ? (
-          <div className="text-center text-red-500">{error}</div>
+          <div className="text-center" style={{ color: 'var(--modal-error)' }}>{error}</div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full rounded-xl overflow-hidden shadow border border-amber-100">
+            <table className="min-w-full rounded-xl overflow-hidden shadow" style={{ border: '1px solid var(--border)' }}>
               <thead>
-                <tr className="bg-gradient-to-r from-amber-200 to-amber-100 text-amber-900">
-                  <th className="px-4 py-2 border-b font-semibold">Name</th>
-                  <th className="px-4 py-2 border-b font-semibold">Username</th>
-                  <th className="px-4 py-2 border-b font-semibold">Email</th>
-                  <th className="px-4 py-2 border-b font-semibold">Contact</th>
-                  <th className="px-4 py-2 border-b font-semibold">DOB</th>
-                  <th className="px-4 py-2 border-b font-semibold">Role</th>
-                  <th className="px-4 py-2 border-b font-semibold">Privilege For Books</th>
-                  <th className="px-4 py-2 border-b font-semibold">Actions</th>
+                <tr style={{ background: 'var(--card-hover)', color: 'var(--text)' }}>
+                  <th className="px-4 py-2 font-semibold" style={{ borderBottom: '1px solid var(--border)' }}>Name</th>
+                  <th className="px-4 py-2 font-semibold" style={{ borderBottom: '1px solid var(--border)' }}>Username</th>
+                  <th className="px-4 py-2 font-semibold" style={{ borderBottom: '1px solid var(--border)' }}>Email</th>
+                  <th className="px-4 py-2 font-semibold" style={{ borderBottom: '1px solid var(--border)' }}>Contact</th>
+                  <th className="px-4 py-2 font-semibold" style={{ borderBottom: '1px solid var(--border)' }}>DOB</th>
+                  <th className="px-4 py-2 font-semibold" style={{ borderBottom: '1px solid var(--border)' }}>Role</th>
+                  <th className="px-4 py-2 font-semibold" style={{ borderBottom: '1px solid var(--border)' }}>Privilege For Books</th>
+                  <th className="px-4 py-2 font-semibold" style={{ borderBottom: '1px solid var(--border)' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {users.map((user, idx) => (
                   <tr
                     key={user._id}
-                    className={`transition ${idx % 2 === 0 ? 'bg-white' : 'bg-amber-50'} hover:bg-amber-100`}
-                    style={{ color: '#222' }}
+                    className="transition"
+                    style={{ background: idx % 2 === 0 ? 'var(--card)' : 'var(--bg)', color: 'var(--text)' }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--card-hover)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = idx % 2 === 0 ? 'var(--card)' : 'var(--bg)')}
                   >
-                    <td className="px-4 py-2 border-b font-semibold">{user.name}</td>
-                    <td className="px-4 py-2 border-b">{user.username}</td>
+                    <td className="px-4 py-2 font-semibold" style={{ borderBottom: '1px solid var(--border)' }}>{user.name}</td>
+                    <td className="px-4 py-2" style={{ borderBottom: '1px solid var(--border)' }}>{user.username}</td>
                     {editUserId === user._id ? (
                       <>
-                        <td className="px-4 py-2 border-b">
+                        <td className="px-4 py-2" style={{ borderBottom: '1px solid var(--border)' }}>
                           <input
-                            className="border rounded px-2 py-1 w-full"
+                            className="rounded px-2 py-1 w-full"
+                            style={{ background: 'var(--input-bg)', color: 'var(--input-text)', border: '1px solid var(--input-border)' }}
                             value={editData.email || ''}
                             onChange={e => handleEditChange('email', e.target.value)}
                           />
                         </td>
-                        <td className="px-4 py-2 border-b">
+                        <td className="px-4 py-2" style={{ borderBottom: '1px solid var(--border)' }}>
                           <input
-                            className="border rounded px-2 py-1 w-full"
+                            className="rounded px-2 py-1 w-full"
+                            style={{ background: 'var(--input-bg)', color: 'var(--input-text)', border: '1px solid var(--input-border)' }}
                             value={editData.contactNo || ''}
                             onChange={e => handleEditChange('contactNo', e.target.value)}
                           />
                         </td>
-                        <td className="px-4 py-2 border-b">
+                        <td className="px-4 py-2" style={{ borderBottom: '1px solid var(--border)' }}>
                           <input
-                            className="border rounded px-2 py-1 w-full"
+                            className="rounded px-2 py-1 w-full"
+                            style={{ background: 'var(--input-bg)', color: 'var(--input-text)', border: '1px solid var(--input-border)' }}
                             type="date"
                             value={editData.dob ? new Date(editData.dob).toISOString().substring(0, 10) : ''}
                             onChange={e => handleEditChange('dob', e.target.value)}
                           />
                         </td>
-                        <td className="px-4 py-2 border-b">
+                        <td className="px-4 py-2" style={{ borderBottom: '1px solid var(--border)' }}>
                           <select
-                            className="border rounded px-2 py-1 w-32 min-w-[8rem]"
+                            className="rounded px-2 py-1 w-32 min-w-[8rem]"
+                            style={{ background: 'var(--input-bg)', color: 'var(--input-text)', border: '1px solid var(--input-border)' }}
                             value={editData.role || 'user'}
                             onChange={e => handleEditChange('role', e.target.value)}
                           >
@@ -164,13 +172,18 @@ const UserManagementModal: React.FC<UserManagementModalProps> = ({ open, onClose
                             <option value="guest">guest</option>
                           </select>
                         </td>
-                        <td className="px-4 py-2 border-b">
+                        <td className="px-4 py-2" style={{ borderBottom: '1px solid var(--border)' }}>
                           <div className="flex gap-2">
-                            {['normal', 'special', 'private'].map(option => (
+                            {['normal', 'special', 'private'].map(option => {
+                              const active = editData.privilegeForBooks?.includes(option);
+                              return (
                               <button
                                 key={option}
                                 type="button"
-                                className={`px-2 py-1 rounded border ${editData.privilegeForBooks?.includes(option) ? 'bg-blue-500 text-white' : 'bg-white text-gray-800'}`}
+                                className="px-2 py-1 rounded"
+                                style={active
+                                  ? { background: 'var(--accent-deep)', color: 'var(--btn-primary-text)', border: '1px solid var(--accent-deep)' }
+                                  : { background: 'var(--input-bg)', color: 'var(--text)', border: '1px solid var(--input-border)' }}
                                 onClick={() => {
                                   const current = editData.privilegeForBooks || [];
                                   if (current.includes(option)) {
@@ -182,26 +195,27 @@ const UserManagementModal: React.FC<UserManagementModalProps> = ({ open, onClose
                               >
                                 {option.charAt(0).toUpperCase() + option.slice(1)}
                               </button>
-                            ))}
+                              );
+                            })}
                           </div>
                         </td>
-                        <td className="px-4 py-2 border-b text-center">
+                        <td className="px-4 py-2 text-center" style={{ borderBottom: '1px solid var(--border)' }}>
                           <button className="px-3 py-1 bg-green-500 hover:bg-green-600 text-white rounded-lg font-semibold shadow-sm transition-all mr-2" onClick={() => handleEditSave(user._id)}>Save</button>
                           <button className="px-3 py-1 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-lg font-semibold shadow-sm transition-all" onClick={handleEditCancel}>Cancel</button>
                         </td>
                       </>
                     ) : (
                       <>
-                        <td className="px-4 py-2 border-b">{user.email}</td>
-                        <td className="px-4 py-2 border-b">{user.contactNo}</td>
-                        <td className="px-4 py-2 border-b">{user.dob ? new Date(user.dob).toLocaleDateString() : ''}</td>
-                        <td className="px-4 py-2 border-b">{user.role}</td>
-                        <td className="px-4 py-2 border-b text-center">
+                        <td className="px-4 py-2" style={{ borderBottom: '1px solid var(--border)' }}>{user.email}</td>
+                        <td className="px-4 py-2" style={{ borderBottom: '1px solid var(--border)' }}>{user.contactNo}</td>
+                        <td className="px-4 py-2" style={{ borderBottom: '1px solid var(--border)' }}>{user.dob ? new Date(user.dob).toLocaleDateString() : ''}</td>
+                        <td className="px-4 py-2" style={{ borderBottom: '1px solid var(--border)' }}>{user.role}</td>
+                        <td className="px-4 py-2 text-center" style={{ borderBottom: '1px solid var(--border)' }}>
                           {Array.isArray(user.privilegeForBooks)
                             ? user.privilegeForBooks.join(', ')
                             : user.privilegeForBooks || 'normal'}
                         </td>
-                        <td className="px-4 py-2 border-b text-center">
+                        <td className="px-4 py-2 text-center" style={{ borderBottom: '1px solid var(--border)' }}>
                           <button className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold shadow-sm transition-all mr-2" onClick={() => handleEdit(user)}>Edit</button>
                           <button className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded-lg font-semibold shadow-sm transition-all" disabled>Delete</button>
                         </td>

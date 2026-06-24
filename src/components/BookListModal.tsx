@@ -110,73 +110,79 @@ const BookListModal: React.FC<BookListModalProps> = ({ open, onClose, books }) =
     <div
       className="fixed inset-0 z-50 flex items-center justify-center"
       style={{
-        background: 'linear-gradient(120deg, rgba(30,32,38,0.32) 0%, rgba(224,231,255,0.18) 100%)',
+        background: 'var(--modal-overlay)',
         backdropFilter: 'blur(10px)',
         WebkitBackdropFilter: 'blur(10px)',
         animation: 'modalFadeIn 0.25s cubic-bezier(.4,2,.6,1)'
       }}
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
-        className="rounded-2xl shadow-2xl w-full max-w-6xl px-10 py-8 relative border border-amber-100"
+        className="vb-modal w-full max-w-6xl px-10 py-8 relative"
         style={{
-          background: 'linear-gradient(120deg, #fff 60%, #fef6e4 100%)',
-          color: '#222',
-          boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.18)',
           transform: 'scale(1)',
           transition: 'transform 0.2s',
         }}
       >
         <button
-          className="absolute top-4 right-4 text-gray-400 hover:text-red-500 text-2xl font-bold transition-colors"
+          className="absolute top-4 right-4 text-2xl font-bold transition-colors"
+          style={{ color: 'var(--text-muted)', lineHeight: 1 }}
           onClick={onClose}
           title="Close"
         >
           &times;
         </button>
-        <h2 className="text-3xl font-extrabold mb-6 text-center tracking-tight text-amber-700 drop-shadow-sm" style={{ letterSpacing: '-0.01em' }}>
+        <h2
+          className="text-3xl font-extrabold mb-6 text-center tracking-tight"
+          style={{ color: 'var(--accent-deep)', letterSpacing: '-0.01em', fontFamily: '"Gentium Plus", "Noto Serif Devanagari", Georgia, serif' }}
+        >
           All Books
         </h2>
-        <hr className="mb-6 border-amber-100" />
+        <hr className="mb-6" style={{ borderColor: 'var(--border)' }} />
         <div className="overflow-x-auto">
-          <table className="min-w-full rounded-xl overflow-hidden shadow border border-amber-100">
+          <table className="min-w-full rounded-xl overflow-hidden shadow" style={{ border: '1px solid var(--border)' }}>
             <thead>
-              <tr className="bg-gradient-to-r from-amber-200 to-amber-100 text-amber-900">
-                <th className="px-4 py-2 border-b font-semibold">Title</th>
-                <th className="px-4 py-2 border-b font-semibold">Author</th>
-                <th className="px-4 py-2 border-b font-semibold">Language</th>
-                <th className="px-4 py-2 border-b font-semibold">Category</th>
-                <th className="px-4 py-2 border-b font-semibold">Description</th>
-                <th className="px-4 py-2 border-b font-semibold">Type</th>
-                <th className="px-4 py-2 border-b font-semibold">Action</th>
+              <tr style={{ background: 'var(--card-hover)', color: 'var(--text)' }}>
+                <th className="px-4 py-2 font-semibold" style={{ borderBottom: '1px solid var(--border)' }}>Title</th>
+                <th className="px-4 py-2 font-semibold" style={{ borderBottom: '1px solid var(--border)' }}>Author</th>
+                <th className="px-4 py-2 font-semibold" style={{ borderBottom: '1px solid var(--border)' }}>Language</th>
+                <th className="px-4 py-2 font-semibold" style={{ borderBottom: '1px solid var(--border)' }}>Category</th>
+                <th className="px-4 py-2 font-semibold" style={{ borderBottom: '1px solid var(--border)' }}>Description</th>
+                <th className="px-4 py-2 font-semibold" style={{ borderBottom: '1px solid var(--border)' }}>Type</th>
+                <th className="px-4 py-2 font-semibold" style={{ borderBottom: '1px solid var(--border)' }}>Action</th>
               </tr>
             </thead>
             <tbody>
               {editBooks.map((book, idx) => (
                 <tr
                   key={book._id}
-                  className={
-                    `transition ${idx % 2 === 0 ? 'bg-white' : 'bg-amber-50'} hover:bg-amber-100`}
-                  style={{ color: '#222' }}
+                  className="transition"
+                  style={{ background: idx % 2 === 0 ? 'var(--card)' : 'var(--bg)', color: 'var(--text)' }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--card-hover)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = idx % 2 === 0 ? 'var(--card)' : 'var(--bg)')}
                 >
                   {editIdx === book._id ? (
                     <>
-                      <td className="px-4 py-2 border-b font-semibold">
+                      <td className="px-4 py-2 font-semibold" style={{ borderBottom: '1px solid var(--border)' }}>
                         <input
-                          className="w-full px-2 py-1 border rounded"
+                          className="w-full px-2 py-1 rounded"
+                          style={{ background: 'var(--input-bg)', color: 'var(--input-text)', border: '1px solid var(--input-border)' }}
                           value={editValues.title || ''}
                           onChange={e => handleEditChange('title', e.target.value)}
                         />
                       </td>
-                      <td className="px-4 py-2 border-b">
+                      <td className="px-4 py-2" style={{ borderBottom: '1px solid var(--border)' }}>
                         <input
-                          className="w-full px-2 py-1 border rounded"
+                          className="w-full px-2 py-1 rounded"
+                          style={{ background: 'var(--input-bg)', color: 'var(--input-text)', border: '1px solid var(--input-border)' }}
                           value={editValues.author || ''}
                           onChange={e => handleEditChange('author', e.target.value)}
                         />
                       </td>
-                      <td className="px-4 py-2 border-b">
+                      <td className="px-4 py-2" style={{ borderBottom: '1px solid var(--border)' }}>
                         <select
-                          className="w-full px-2 py-1 border rounded bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-2 py-1 rounded focus:outline-none"
+                          style={{ background: 'var(--input-bg)', color: 'var(--input-text)', border: '1px solid var(--input-border)' }}
                           value={editValues.language || ''}
                           onChange={e => handleEditChange('language', e.target.value)}
                         >
@@ -186,9 +192,10 @@ const BookListModal: React.FC<BookListModalProps> = ({ open, onClose, books }) =
                           ))}
                         </select>
                       </td>
-                      <td className="px-4 py-2 border-b">
+                      <td className="px-4 py-2" style={{ borderBottom: '1px solid var(--border)' }}>
                         <select
-                          className="w-full px-2 py-1 border rounded bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-2 py-1 rounded focus:outline-none"
+                          style={{ background: 'var(--input-bg)', color: 'var(--input-text)', border: '1px solid var(--input-border)' }}
                           value={editValues.category || ''}
                           onChange={e => handleEditChange('category', e.target.value)}
                         >
@@ -198,16 +205,18 @@ const BookListModal: React.FC<BookListModalProps> = ({ open, onClose, books }) =
                           ))}
                         </select>
                       </td>
-                      <td className="px-4 py-2 border-b max-w-xs">
+                      <td className="px-4 py-2 max-w-xs" style={{ borderBottom: '1px solid var(--border)' }}>
                         <input
-                          className="w-full px-2 py-1 border rounded"
+                          className="w-full px-2 py-1 rounded"
+                          style={{ background: 'var(--input-bg)', color: 'var(--input-text)', border: '1px solid var(--input-border)' }}
                           value={editValues.description || ''}
                           onChange={e => handleEditChange('description', e.target.value)}
                         />
                       </td>
-                      <td className="px-4 py-2 border-b">
+                      <td className="px-4 py-2" style={{ borderBottom: '1px solid var(--border)' }}>
                         <select
-                          className="w-full px-2 py-1 border rounded bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-2 py-1 rounded focus:outline-none"
+                          style={{ background: 'var(--input-bg)', color: 'var(--input-text)', border: '1px solid var(--input-border)' }}
                           value={editValues.type || ''}
                           onChange={e => handleEditChange('type', e.target.value)}
                         >
@@ -217,7 +226,7 @@ const BookListModal: React.FC<BookListModalProps> = ({ open, onClose, books }) =
                           ))}
                         </select>
                       </td>
-                      <td className="px-4 py-2 border-b align-middle min-h-[48px]">
+                      <td className="px-4 py-2 align-middle min-h-[48px]" style={{ borderBottom: '1px solid var(--border)' }}>
                         <div className="flex flex-col md:flex-row gap-2 justify-center items-center">
                           <button
                             className="px-3 py-1 bg-green-500 hover:bg-green-600 text-white rounded-lg font-semibold shadow-sm transition-all"
@@ -232,13 +241,13 @@ const BookListModal: React.FC<BookListModalProps> = ({ open, onClose, books }) =
                     </>
                   ) : (
                     <>
-                      <td className="px-4 py-2 border-b font-semibold">{book.title}</td>
-                      <td className="px-4 py-2 border-b">{book.author || '-'}</td>
-                      <td className="px-4 py-2 border-b">{book.language || '-'}</td>
-                      <td className="px-4 py-2 border-b">{book.category || '-'}</td>
-                      <td className="px-4 py-2 border-b max-w-xs truncate" title={book.description}>{book.description || '-'}</td>
-                      <td className="px-4 py-2 border-b">{book.type || '-'}</td>
-                      <td className="px-4 py-2 border-b align-middle min-h-[48px]">
+                      <td className="px-4 py-2 font-semibold" style={{ borderBottom: '1px solid var(--border)' }}>{book.title}</td>
+                      <td className="px-4 py-2" style={{ borderBottom: '1px solid var(--border)' }}>{book.author || '-'}</td>
+                      <td className="px-4 py-2" style={{ borderBottom: '1px solid var(--border)' }}>{book.language || '-'}</td>
+                      <td className="px-4 py-2" style={{ borderBottom: '1px solid var(--border)' }}>{book.category || '-'}</td>
+                      <td className="px-4 py-2 max-w-xs truncate" style={{ borderBottom: '1px solid var(--border)' }} title={book.description}>{book.description || '-'}</td>
+                      <td className="px-4 py-2" style={{ borderBottom: '1px solid var(--border)' }}>{book.type || '-'}</td>
+                      <td className="px-4 py-2 align-middle min-h-[48px]" style={{ borderBottom: '1px solid var(--border)' }}>
                         <div className="flex flex-col md:flex-row gap-2 justify-center items-center">
                           <button
                             className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold shadow-sm transition-all"

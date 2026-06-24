@@ -80,6 +80,29 @@ const readingProgressSchema = new mongoose.Schema({
       default: Date.now
     }
   }],
+
+  highlights: [{
+    text: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: [2000, 'Highlight text cannot exceed 2000 characters']
+    },
+    color: {
+      type: String,
+      trim: true,
+      default: 'rgba(250, 204, 21, 0.45)'
+    },
+    page: {
+      type: Number,
+      default: 0,
+      min: 0
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
   
   readingStatistics: {
     totalReadingTime: {

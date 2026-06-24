@@ -1,12 +1,26 @@
 'use client';
 
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { ChevronLeft, ChevronRight, BookOpen, ArrowLeft, Settings, SkipForward, SkipBack, AlertCircle, Bookmark, BookmarkCheck, User, Upload, Bug, ChevronDown, Plus, FileText, Search } from 'lucide-react';
+import { ChevronLeft, ChevronRight, BookOpen, ArrowLeft, Settings, SkipForward, SkipBack, AlertCircle, Bookmark, BookmarkCheck, User, Upload, Bug, ChevronDown, Plus, FileText, Search, Highlighter, Trash2, X } from 'lucide-react';
 import { updateBookProgress, fetchBookContent, fetchBooks, Book } from '../lib/bookStorage';
 import { BACKEND_API_URL } from '../lib/config';
 import { useAuth } from '../contexts/AuthContext';
+import { useLocation, useNavigate } from 'react-router-dom';
 import Header from './Header';
 import CategoryPanel from './CategoryPanel';
+
+// Returns true when a book belongs to the given language selection. Uses the
+// book's `language` field when present, falling back to its tags.
+const bookMatchesLanguage = (book: Book, language: string): boolean => {
+  if (language === 'all') return true;
+  const lang = (book.language || '').toString().toLowerCase();
+  const tags: string[] = Array.isArray(book.tags) ? book.tags.map(t => String(t).toLowerCase()) : [];
+  if (language === 'telugu') return lang ? lang === 'telugu' : tags.some(t => t.includes('telugu'));
+  if (language === 'sanskrit') return lang ? lang === 'sanskrit' : tags.some(t => t.includes('sanskrit'));
+  // english (default): explicitly english, or no telugu/sanskrit marker
+  if (lang) return lang === 'english';
+  return !tags.some(t => t.includes('telugu') || t.includes('sanskrit'));
+};
 
 interface EBookReaderProps {
   bookId?: string;
@@ -24,6 +38,13 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
   const [books, setBooks] = useState<Book[]>([]);
   const [categories, setCategories] = useState<{name: string; books: Book[]; expanded: boolean}[]>([]);
   const [loadingBooks, setLoadingBooks] = useState(true);
+  const [adminStats, setAdminStats] = useState<{ totalUsers: number; loggedInUsers: number; totalBooks: number } | null>(null);
+  const [adminStatsLoading, setAdminStatsLoading] = useState(false);
+  const [adminStatsError, setAdminStatsError] = useState('');
+  const [adminStatsReloadKey, setAdminStatsReloadKey] = useState(0);
+  const [showFeaturesModal, setShowFeaturesModal] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
   
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
@@ -99,12 +120,22 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
   const [highlightedContent, setHighlightedContent] = useState('');
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [bookmarks, setBookmarks] = useState<{[key: string]: number}>({});
+
+  // Per-user text highlights for the current book
+  type Highlight = { id: string; text: string; color: string; page: number; createdAt: number };
+  const [highlights, setHighlights] = useState<Highlight[]>([]);
+  const [hlPopup, setHlPopup] = useState<{ x: number; y: number; text: string; mode: 'create' | 'remove'; id?: string } | null>(null);
+  const [showHighlights, setShowHighlights] = useState(false);
   
   // Backend pagination state
   const [paginationInfo, setPaginationInfo] = useState<any>(null);
   const [isContentHtml, setIsContentHtml] = useState(false);
   const lastLoadedPageRef = useRef<number>(1);
   const bookmarkLoadedRef = useRef<boolean>(false);
+  // Refs used to safely reconcile DB-backed bookmark/highlights inside async callbacks
+  const bookIdRef = useRef<string | undefined>(bookId);
+  const currentPageRef = useRef<number>(1);
+  const bookmarkAppliedRef = useRef<boolean>(false);
   // Continuous (infinite) scroll reading state — pages are appended as the
   // user scrolls instead of replacing the view on every navigation.
   const [loadedPages, setLoadedPages] = useState<{ page: number; html: string }[]>([]);
@@ -307,19 +338,78 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
     loadBooks();
   }, []);
 
+  useEffect(() => {
+    if (user?.role !== 'admin') {
+      setAdminStats(null);
+      setAdminStatsError('');
+      return;
+    }
+
+    const token = localStorage.getItem('vedic_auth_token') || sessionStorage.getItem('vedic_auth_token') || '';
+    if (!token) return;
+
+    let isCancelled = false;
+    const fetchAdminStats = async () => {
+      setAdminStatsLoading(true);
+      setAdminStatsError('');
+      try {
+        const [usersResponse, booksResponse] = await Promise.all([
+          fetch(`${BACKEND_API_URL}/admin/users`, {
+            headers: { Authorization: `Bearer ${token}` }
+          }),
+          fetch(`${BACKEND_API_URL}/books?page=1&limit=1`, {
+            headers: { Authorization: `Bearer ${token}` }
+          })
+        ]);
+
+        const usersJson = await usersResponse.json();
+        const booksJson = await booksResponse.json();
+
+        if (!usersResponse.ok || !usersJson.success) {
+          throw new Error(usersJson.message || 'Failed to load users count');
+        }
+        if (!booksResponse.ok || !booksJson.success) {
+          throw new Error(booksJson.message || 'Failed to load books count');
+        }
+
+        const users = Array.isArray(usersJson.data) ? usersJson.data : [];
+        const loggedInUsers = users.filter((entry: any) => Array.isArray(entry.refreshTokens) && entry.refreshTokens.length > 0).length;
+        const totalBooks = booksJson?.data?.pagination?.totalBooks ?? 0;
+
+        if (!isCancelled) {
+          setAdminStats({
+            totalUsers: users.length,
+            loggedInUsers,
+            totalBooks,
+          });
+        }
+      } catch (error: any) {
+        if (!isCancelled) {
+          setAdminStatsError(error.message || 'Failed to load admin stats');
+        }
+      } finally {
+        if (!isCancelled) {
+          setAdminStatsLoading(false);
+        }
+      }
+    };
+
+    fetchAdminStats();
+    return () => {
+      isCancelled = true;
+    };
+  }, [user?.role, adminStatsReloadKey]);
+
+  const openAdminModalFromWelcome = (target: 'books' | 'users') => {
+    const params = new URLSearchParams(location.search);
+    params.set('adminOpen', target);
+    navigate({ pathname: '/homePage', search: `?${params.toString()}` }, { replace: true });
+  };
+
   // Organize books into categories
   const organizeBooks = (booksList: Book[]) => {
     // Filter books by selected language first
-    const filteredBooks = booksList.filter(book => {
-      if (selectedLanguage === 'english') {
-        return !book.tags?.some(tag => tag.toLowerCase().includes('telugu') || tag.toLowerCase().includes('sanskrit'));
-      } else if (selectedLanguage === 'telugu') {
-        return book.tags?.some(tag => tag.toLowerCase().includes('telugu'));
-      } else if (selectedLanguage === 'sanskrit') {
-        return book.tags?.some(tag => tag.toLowerCase().includes('sanskrit'));
-      }
-      return true;
-    });
+    const filteredBooks = booksList.filter(book => bookMatchesLanguage(book, selectedLanguage));
 
 
     // Since category is removed, group all books under 'Other' or by another property if needed
@@ -773,11 +863,18 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
     return organizeBooks(books);
   };
 
-  const languageConfig = {
-    english: { label: 'English books', code: 'EN', icon: 'EN', count: 3 },
-    telugu: { label: 'Telugu books', code: 'TE', icon: 'తె', count: 1 },
-    sanskrit: { label: 'Sanskrit books', code: 'संस्कृत', icon: 'सं', count: 1 }
-  };
+  const languageConfig = useMemo(() => ({
+    all: { label: 'All books', code: 'All', icon: 'All', count: books.length },
+    english: { label: 'English books', code: 'EN', icon: 'EN', count: books.filter(b => bookMatchesLanguage(b, 'english')).length },
+    telugu: { label: 'Telugu books', code: 'TE', icon: 'తె', count: books.filter(b => bookMatchesLanguage(b, 'telugu')).length },
+    sanskrit: { label: 'Sanskrit books', code: 'संस्कृत', icon: 'सं', count: books.filter(b => bookMatchesLanguage(b, 'sanskrit')).length }
+  }), [books]);
+
+  // Books visible on the landing page, filtered by the currently selected language.
+  const visibleBooks = useMemo(
+    () => books.filter(book => bookMatchesLanguage(book, selectedLanguage)),
+    [books, selectedLanguage]
+  );
 
   // Re-organize books when language changes
   useEffect(() => {
@@ -844,6 +941,8 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
     bookmarkLoadedRef.current = false;
     lastLoadedPageRef.current = 0; // Reset last loaded page to force content reload
     setContent(''); // Clear content immediately
+    setLoadedPages([]); // Clear continuous-scroll buffer so returning to the same
+                        // book at a previously-loaded page still forces a fresh fetch
     setError(''); // Clear any errors
     setBookTitle(''); // Reset book title
     setIsLoading(true); // Show loading state
@@ -932,13 +1031,17 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
   // Update highlighted content when page content changes or search query changes
   useEffect(() => {
     let highlighted = currentPageContent;
+    // Apply user's saved highlights first
+    if (highlights.length > 0 && highlighted) {
+      highlighted = applyHighlights(highlighted, highlights);
+    }
     // Apply search highlighting if there's a search query
     if (searchQuery && searchQuery.trim() && highlighted) {
       // Only add IDs in main reading area (not in search results panel)
       highlighted = highlightSearchWord(highlighted, searchQuery, { addIds: true, page: currentPage });
     }
     setHighlightedContent(highlighted);
-  }, [currentPageContent, searchQuery, currentPage]);
+  }, [currentPageContent, searchQuery, currentPage, highlights]);
 
   // Reload content when page changes (for backend pagination)
   useEffect(() => {
@@ -1269,6 +1372,16 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
         ...prev,
         [bookId]: pageNumber
       }));
+
+      // Persist to DB
+      const token = getAuthToken();
+      if (token) {
+        fetch(`${BACKEND_API_URL}/users/progress/${bookId}/bookmark`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ page: pageNumber }),
+        }).catch(() => { /* keep local bookmark when offline */ });
+      }
     }
   };
 
@@ -1299,6 +1412,15 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
         delete updated[bookId];
         return updated;
       });
+
+      // Persist to DB
+      const token = getAuthToken();
+      if (token) {
+        fetch(`${BACKEND_API_URL}/users/progress/${bookId}/bookmark`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` },
+        }).catch(() => { /* keep local removal when offline */ });
+      }
     }
   };
 
@@ -1309,6 +1431,223 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
       saveBookmark(currentPage);
     }
   };
+
+  // ---- Per-user highlights ----
+  const HIGHLIGHT_COLORS = [
+    { label: 'Yellow', value: 'rgba(250, 204, 21, 0.45)' },
+    { label: 'Green', value: 'rgba(74, 222, 128, 0.40)' },
+    { label: 'Pink', value: 'rgba(244, 114, 182, 0.40)' },
+    { label: 'Blue', value: 'rgba(96, 165, 250, 0.40)' },
+  ];
+
+  const getHighlightsKey = () => {
+    const currentUser = user || authUser;
+    if (!currentUser || !bookId) return null;
+    return `vedic_highlights_${currentUser.username}_${bookId}`;
+  };
+
+  const getAuthToken = () =>
+    localStorage.getItem('vedic_auth_token') || sessionStorage.getItem('vedic_auth_token') || '';
+
+  const persistHighlights = (list: Highlight[]) => {
+    const key = getHighlightsKey();
+    if (key) {
+      try {
+        localStorage.setItem(key, JSON.stringify(list));
+      } catch (e) {
+        console.error('Error saving highlights:', e);
+      }
+    }
+  };
+
+  const addHighlight = (color: string) => {
+    if (!hlPopup || hlPopup.mode !== 'create') return;
+    const text = hlPopup.text.trim();
+    if (!text) return;
+    const newHighlight: Highlight = {
+      id: `tmp_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      text,
+      color,
+      page: currentPage,
+      createdAt: Date.now(),
+    };
+    // Optimistic local update (instant UI + offline cache)
+    setHighlights(prev => {
+      const next = [...prev, newHighlight];
+      persistHighlights(next);
+      return next;
+    });
+    window.getSelection()?.removeAllRanges();
+    setHlPopup(null);
+    // Persist to DB
+    const token = getAuthToken();
+    const bId = bookId;
+    if (token && bId) {
+      fetch(`${BACKEND_API_URL}/users/progress/${bId}/highlights`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ text, color, page: currentPage }),
+      })
+        .then(r => r.json())
+        .then(data => {
+          if (data && data.success && Array.isArray(data.highlights) && bookIdRef.current === bId) {
+            setHighlights(data.highlights);
+            persistHighlights(data.highlights);
+          }
+        })
+        .catch(() => { /* keep optimistic local copy when offline */ });
+    }
+  };
+
+  const removeHighlight = (id: string) => {
+    // Optimistic local removal
+    setHighlights(prev => {
+      const next = prev.filter(h => h.id !== id);
+      persistHighlights(next);
+      return next;
+    });
+    setHlPopup(null);
+    // Persist to DB (skip ids that were never synced)
+    const token = getAuthToken();
+    const bId = bookId;
+    if (token && bId && !id.startsWith('tmp_')) {
+      fetch(`${BACKEND_API_URL}/users/progress/${bId}/highlights/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then(r => r.json())
+        .then(data => {
+          if (data && data.success && Array.isArray(data.highlights) && bookIdRef.current === bId) {
+            setHighlights(data.highlights);
+            persistHighlights(data.highlights);
+          }
+        })
+        .catch(() => { /* keep local removal when offline */ });
+    }
+  };
+
+  // Tag-aware wrapping of saved highlight texts in <mark>, leaving HTML tags intact
+  const applyHighlights = (html: string, list: Highlight[]): string => {
+    if (!html || !list.length) return html;
+    const parts = html.split(/(<[^>]+>)/g);
+    return parts
+      .map(part => {
+        if (!part || part.startsWith('<')) return part;
+        let text = part;
+        for (const h of list) {
+          if (!h.text) continue;
+          const escaped = h.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const re = new RegExp(`(${escaped})`, 'g');
+          text = text.replace(
+            re,
+            `<mark class="vb-highlight" data-hl-id="${h.id}" style="background:${h.color};color:inherit;border-radius:2px;padding:0 1px;cursor:pointer;">$1</mark>`
+          );
+        }
+        return text;
+      })
+      .join('');
+  };
+
+  // Show the create-highlight toolbar when the user selects text in the reading area
+  const handleContentMouseUp = () => {
+    if (!getHighlightsKey()) return; // requires a logged-in user
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed || sel.rangeCount === 0) return;
+    const text = sel.toString().trim();
+    if (!text || text.length < 2) return;
+    const range = sel.getRangeAt(0);
+    if (!contentRef.current || !contentRef.current.contains(range.commonAncestorContainer)) return;
+    const rect = range.getBoundingClientRect();
+    if (!rect || (rect.width === 0 && rect.height === 0)) return;
+    setHlPopup({ x: rect.left + rect.width / 2, y: rect.top, text, mode: 'create' });
+  };
+
+  // Click an existing highlight to offer removal
+  const handleContentClick = (e: React.MouseEvent) => {
+    const sel = window.getSelection();
+    if (sel && !sel.isCollapsed) return; // an active selection is being made
+    const mark = (e.target as HTMLElement).closest('mark.vb-highlight') as HTMLElement | null;
+    if (mark) {
+      const id = mark.getAttribute('data-hl-id') || undefined;
+      const rect = mark.getBoundingClientRect();
+      setHlPopup({ x: rect.left + rect.width / 2, y: rect.top, text: '', mode: 'remove', id });
+    } else if (hlPopup) {
+      setHlPopup(null);
+    }
+  };
+
+  const jumpToHighlight = (h: Highlight) => {
+    setShowHighlights(false);
+    setHlPopup(null);
+    setCurrentPage(h.page);
+    setPageInputValue(h.page.toString());
+    if (loadedPages.some(p => p.page === h.page)) {
+      requestAnimationFrame(() => scrollToPageAnchor(h.page));
+    }
+  };
+
+  // Keep refs in sync for use inside async DB-reconcile callbacks
+  useEffect(() => { bookIdRef.current = bookId; }, [bookId]);
+  useEffect(() => { currentPageRef.current = currentPage; }, [currentPage]);
+
+  // Load this user's bookmark + highlights whenever the book or user changes.
+  // localStorage is read first for instant display, then reconciled from the DB.
+  useEffect(() => {
+    const key = getHighlightsKey();
+    bookmarkAppliedRef.current = false;
+    if (!key) {
+      setHighlights([]);
+      return;
+    }
+    // Instant cache
+    try {
+      const saved = localStorage.getItem(key);
+      setHighlights(saved ? JSON.parse(saved) : []);
+    } catch (e) {
+      console.error('Error loading highlights:', e);
+      setHighlights([]);
+    }
+    // Reconcile from DB (source of truth, enables cross-device sync)
+    const token = getAuthToken();
+    const bId = bookId;
+    if (!token || !bId) return;
+    let cancelled = false;
+    fetch(`${BACKEND_API_URL}/users/progress/${bId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (cancelled || bookIdRef.current !== bId || !data || !data.success) return;
+        // Highlights
+        if (Array.isArray(data.highlights)) {
+          setHighlights(data.highlights);
+          try { localStorage.setItem(key, JSON.stringify(data.highlights)); } catch { /* ignore */ }
+        }
+        // Bookmark
+        const bkKey = getBookmarkKey();
+        if (data.bookmark && typeof data.bookmark.page === 'number') {
+          if (bkKey) {
+            try {
+              localStorage.setItem(bkKey, JSON.stringify({ page: data.bookmark.page, timestamp: Date.now(), bookTitle: bookTitle || `Book ${bId}` }));
+            } catch { /* ignore */ }
+          }
+          setIsBookmarked(true);
+          // Apply the saved page only if the reader is still at the start (e.g. first
+          // open on a new device where there was no local bookmark).
+          if (data.bookmark.page > 1 && currentPageRef.current === 1 && !bookmarkAppliedRef.current) {
+            bookmarkAppliedRef.current = true;
+            setCurrentPage(data.bookmark.page);
+            setPageInputValue(String(data.bookmark.page));
+          }
+        } else {
+          if (bkKey) localStorage.removeItem(bkKey);
+          setIsBookmarked(false);
+        }
+      })
+      .catch(() => { /* keep local cache when offline */ });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bookId, authUser, user]);
 
   const handlePageInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -1444,25 +1783,8 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
     </div>
   );
 
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <AlertCircle className="w-12 h-12 mx-auto mb-4" style={{color: 'red'}} />
-          <p className="text-lg mb-4" style={{color: 'var(--deep-blue)'}}>{error}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 rounded-lg"
-            style={{background: 'var(--saffron)', color: 'var(--deep-blue)'}}
-          >
-            Reload
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
+    <>
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg)', overflow: 'hidden' }}>
       <div style={{ flex: '1 1 auto', display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
         {/* Header Bar */}
@@ -1548,32 +1870,36 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
           {/* Main Content Area */}
           <div className="flex-1 flex flex-col ebook-reader-content" style={{ background: 'var(--bg)', flex: 1, minHeight: 0, overflowY: 'auto' }}>
 
-            {/* Persistent sidebar toggle — always visible on desktop */}
-            <div
-              className="hidden md:flex items-center gap-2 px-3 py-1.5 flex-shrink-0 border-b"
-              style={{ background: 'var(--card)', borderColor: 'var(--border)' }}
-            >
-              <button
-                onClick={toggleCategoryPanel}
-                title={isCategoryPanelVisible ? 'Collapse sidebar' : 'Expand sidebar'}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  padding: '3px 10px 3px 6px',
-                  borderRadius: 6,
-                  background: 'var(--card-hover)',
-                  border: '1px solid var(--border)',
-                  cursor: 'pointer',
-                  color: 'var(--text-light)',
-                  fontSize: '0.78rem',
-                  fontWeight: 600,
-                }}
+            {/* Compact "Show sidebar" control — only when the sidebar is collapsed.
+                When the sidebar is open it's hidden inside the sidebar header, so
+                this row disappears and the reading content moves up. */}
+            {!isCategoryPanelVisible && (
+              <div
+                className="hidden md:flex items-center gap-2 px-3 py-1.5 flex-shrink-0 border-b"
+                style={{ background: 'var(--card)', borderColor: 'var(--border)' }}
               >
-                {isCategoryPanelVisible ? <ChevronLeft size={15} /> : <ChevronRight size={15} />}
-                {isCategoryPanelVisible ? 'Hide sidebar' : 'Show sidebar'}
-              </button>
-            </div>
+                <button
+                  onClick={toggleCategoryPanel}
+                  title="Expand sidebar"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '3px 10px 3px 6px',
+                    borderRadius: 6,
+                    background: 'var(--card-hover)',
+                    border: '1px solid var(--border)',
+                    cursor: 'pointer',
+                    color: 'var(--text-light)',
+                    fontSize: '0.78rem',
+                    fontWeight: 600,
+                  }}
+                >
+                  <ChevronRight size={15} />
+                  Show sidebar
+                </button>
+              </div>
+            )}
 
             {/* Search Bar */}
             {bookId && content && (
@@ -1646,7 +1972,21 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
               </div>
             )}
             
-            {bookId && isLoading ? (
+            {bookId && error ? (
+              <div className="flex-1 flex items-center justify-center" style={{ background: 'var(--book-content-bg)' }}>
+                <div className="text-center px-6">
+                  <AlertCircle className="w-12 h-12 mx-auto mb-4" style={{ color: 'red' }} />
+                  <p className="text-lg mb-4" style={{ color: 'var(--text)' }}>{error}</p>
+                  <button
+                    onClick={() => { setError(''); loadContent(); }}
+                    className="px-4 py-2 rounded-lg font-semibold"
+                    style={{ background: 'var(--accent)', color: 'var(--btn-primary-text)', border: 'none', cursor: 'pointer' }}
+                  >
+                    Try again
+                  </button>
+                </div>
+              </div>
+            ) : bookId && isLoading ? (
               <LoadingContent />
             ) : bookId && content ? (
               <div className="flex flex-col flex-1 overflow-hidden">
@@ -1896,6 +2236,28 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
                                 <Bookmark className="w-4 h-4" />
                               )}
                             </button>
+
+                            {(user || authUser) && (
+                              <button
+                                onClick={() => setShowHighlights(true)}
+                                className="relative p-2 rounded-lg transition-colors"
+                                style={highlights.length > 0
+                                  ? { color: 'var(--accent)', background: 'var(--card-hover)' }
+                                  : { color: 'var(--text-muted)', background: 'var(--bg)', border: '1px solid var(--border)' }
+                                }
+                                title="Select text in the book to highlight. Click here to view your highlights."
+                              >
+                                <Highlighter className="w-4 h-4" />
+                                {highlights.length > 0 && (
+                                  <span
+                                    className="absolute -top-1 -right-1 text-[10px] font-bold rounded-full px-1 min-w-[16px] text-center"
+                                    style={{ background: 'var(--accent)', color: 'var(--btn-primary-text)', lineHeight: '16px' }}
+                                  >
+                                    {highlights.length}
+                                  </span>
+                                )}
+                              </button>
+                            )}
                           </div>
 
                           {/* Page Navigation */}
@@ -1944,7 +2306,7 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
                     </div>
 
                     {/* Book Content */}
-                    <div ref={contentRef} onScroll={handleContentScroll} className="flex-1 overflow-y-auto p-3 sm:p-6 ebook-reader-book-content" style={{ background: 'var(--book-content-bg)', color: 'var(--book-content-text)' }}>
+                    <div ref={contentRef} onScroll={handleContentScroll} onMouseUp={handleContentMouseUp} onClick={handleContentClick} className="flex-1 overflow-y-auto p-3 sm:p-6 ebook-reader-book-content" style={{ background: 'var(--book-content-bg)', color: 'var(--book-content-text)' }}>
                       <div
                         className="prose max-w-none leading-relaxed"
                         style={{ fontSize: `${fontSize}px`, lineHeight: lineHeight, color: 'var(--book-content-text)' }}
@@ -2066,36 +2428,114 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
                   {[
                     { icon: '📖', title: 'Śruti', sub: '4 categories', desc: 'Vedas & revealed texts' },
                     { icon: '📚', title: 'Smṛti', sub: '6 categories', desc: 'Traditional literature' },
-                    { icon: '🔖', title: 'Saved texts', sub: 'Bookmarked', desc: 'Your reading list' },
-                  ].map(card => (
-                    <div key={card.title} style={{
-                      flex: '1 1 160px',
-                      background: 'var(--card)',
-                      border: '1px solid var(--border)',
-                      borderRadius: '0.75rem',
-                      padding: '1.1rem 1.25rem',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.85rem',
-                      boxShadow: '0 1px 4px rgba(180,120,0,0.07)',
-                    }}>
+                    { icon: '✨', title: 'Features Guide', sub: 'How to use', desc: 'Tips to read śāstra', onClick: () => setShowFeaturesModal(true) },
+                  ].map(card => {
+                    const clickable = !!card.onClick;
+                    return (
+                    <div
+                      key={card.title}
+                      onClick={card.onClick}
+                      role={clickable ? 'button' : undefined}
+                      title={clickable ? 'View features guide' : undefined}
+                      style={{
+                        flex: '1 1 160px',
+                        background: 'var(--card)',
+                        border: '1px solid var(--border)',
+                        borderRadius: '0.75rem',
+                        padding: '1.1rem 1.25rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.85rem',
+                        boxShadow: '0 1px 4px rgba(180,120,0,0.07)',
+                        cursor: clickable ? 'pointer' : 'default',
+                        transition: 'background 0.15s',
+                      }}
+                      onMouseEnter={clickable ? (e) => (e.currentTarget.style.background = 'var(--card-hover)') : undefined}
+                      onMouseLeave={clickable ? (e) => (e.currentTarget.style.background = 'var(--card)') : undefined}
+                    >
                       <span style={{ fontSize: '1.6rem' }}>{card.icon}</span>
                       <div>
                         <div style={{ fontWeight: 700, color: 'var(--text)', fontSize: '0.95rem' }}>{card.title}</div>
                         <div style={{ color: 'var(--text-light)', fontSize: '0.78rem', marginTop: '0.1rem' }}>{card.sub}</div>
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
+                {/* Admin overview — clickable stat cards matching the library cards above */}
+                {user?.role === 'admin' && (
+                  <div style={{ padding: '0 1.5rem 1.5rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem', gap: '0.75rem', flexWrap: 'wrap' }}>
+                      <h3 style={{ fontWeight: 700, color: 'var(--text)', fontSize: '0.95rem' }}>Administration</h3>
+                      <button
+                        onClick={() => setAdminStatsReloadKey((prev) => prev + 1)}
+                        style={{
+                          border: 'none',
+                          background: 'transparent',
+                          color: 'var(--accent-deep)',
+                          fontSize: '0.78rem',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          padding: 0,
+                        }}
+                      >
+                        {adminStatsLoading ? 'Refreshing…' : 'Refresh'}
+                      </button>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                      {[
+                        { icon: '👥', label: 'Total Users', value: adminStats?.totalUsers ?? 0, target: 'users' as const, hint: 'View all users' },
+                        { icon: '🟢', label: 'Logged In', value: adminStats?.loggedInUsers ?? 0, target: 'users' as const, hint: 'Active sessions' },
+                        { icon: '📕', label: 'Total Books', value: adminStats?.totalBooks ?? 0, target: 'books' as const, hint: 'View all books' },
+                      ].map(stat => (
+                        <button
+                          key={stat.label}
+                          onClick={() => openAdminModalFromWelcome(stat.target)}
+                          title={stat.hint}
+                          style={{
+                            flex: '1 1 160px',
+                            background: 'var(--card)',
+                            border: '1px solid var(--border)',
+                            borderRadius: '0.75rem',
+                            padding: '1.1rem 1.25rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.85rem',
+                            boxShadow: '0 1px 4px rgba(180,120,0,0.07)',
+                            cursor: 'pointer',
+                            textAlign: 'left',
+                            transition: 'background 0.15s',
+                          }}
+                          onMouseEnter={e => (e.currentTarget.style.background = 'var(--card-hover)')}
+                          onMouseLeave={e => (e.currentTarget.style.background = 'var(--card)')}
+                        >
+                          <span style={{ fontSize: '1.6rem' }}>{stat.icon}</span>
+                          <div>
+                            <div style={{ fontWeight: 700, color: 'var(--text)', fontSize: '1.35rem', lineHeight: 1.1 }}>
+                              {adminStatsLoading ? '…' : stat.value}
+                            </div>
+                            <div style={{ color: 'var(--text-light)', fontSize: '0.78rem', marginTop: '0.15rem' }}>{stat.label}</div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+
+                    {adminStatsError && (
+                      <div style={{ marginTop: '0.65rem', fontSize: '0.78rem', color: '#b91c1c' }}>{adminStatsError}</div>
+                    )}
+                  </div>
+                )}
+
                 {/* Recently viewed */}
-                {books.length > 0 && (
+                {visibleBooks.length > 0 && (
                   <div style={{ padding: '0 1.5rem 1.5rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
                       <h3 style={{ fontWeight: 700, color: 'var(--text)', fontSize: '0.95rem' }}>Recently available</h3>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                      {books.slice(0, 5).map(book => (
+                      {visibleBooks.slice(0, 5).map(book => (
                         <button
                           key={book._id}
                           onClick={() => onBookSelect && onBookSelect(book)}
@@ -2143,6 +2583,248 @@ const EBookReader: React.FC<EBookReaderProps> = ({ bookId, title, user, onLogout
           </div>
         </div>
       </div>
+
+      {/* Floating highlight toolbar (create / remove) */}
+      {hlPopup && (
+        <div
+          style={{
+            position: 'fixed',
+            left: Math.min(Math.max(hlPopup.x, 90), (typeof window !== 'undefined' ? window.innerWidth : 1000) - 90),
+            top: Math.max(hlPopup.y - 52, 8),
+            transform: 'translateX(-50%)',
+            zIndex: 1200,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.35rem',
+            padding: '0.4rem 0.5rem',
+            borderRadius: '0.6rem',
+            background: 'var(--modal-bg)',
+            border: '1px solid var(--border)',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
+          }}
+          onMouseDown={e => e.preventDefault()}
+        >
+          {hlPopup.mode === 'create' ? (
+            <>
+              {HIGHLIGHT_COLORS.map(c => (
+                <button
+                  key={c.value}
+                  onClick={() => addHighlight(c.value)}
+                  title={`Highlight (${c.label})`}
+                  style={{
+                    width: 22,
+                    height: 22,
+                    borderRadius: '50%',
+                    background: c.value,
+                    border: '1px solid var(--border)',
+                    cursor: 'pointer',
+                  }}
+                />
+              ))}
+              <button
+                onClick={() => setHlPopup(null)}
+                title="Cancel"
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 22, height: 22, borderRadius: '50%', background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={() => hlPopup.id && removeHighlight(hlPopup.id)}
+              title="Remove highlight"
+              style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '0.25rem 0.6rem', borderRadius: '0.45rem', background: 'transparent', border: 'none', color: 'var(--modal-error)', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}
+            >
+              <Trash2 className="w-3.5 h-3.5" /> Remove
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Highlights list panel */}
+      {showHighlights && (
+        <div
+          onClick={() => setShowHighlights(false)}
+          style={{ position: 'fixed', inset: 0, background: 'var(--modal-overlay)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            className="vb-modal"
+            style={{ width: '100%', maxWidth: 560, maxHeight: '80vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1.1rem 1.4rem', borderBottom: '1px solid var(--border)' }}>
+              <h2 style={{ fontWeight: 800, color: 'var(--accent-deep)', fontSize: '1.15rem', fontFamily: '"Gentium Plus", "Noto Serif Devanagari", Georgia, serif' }}>
+                My Highlights{highlights.length > 0 ? ` (${highlights.length})` : ''}
+              </h2>
+              <button
+                onClick={() => setShowHighlights(false)}
+                aria-label="Close"
+                style={{ width: 32, height: 32, borderRadius: '50%', border: '1px solid var(--header-badge-border)', background: 'var(--header-badge-bg)', color: 'var(--panel-header-color)', cursor: 'pointer', fontSize: '1rem', lineHeight: 1 }}
+              >
+                ✕
+              </button>
+            </div>
+            <div style={{ padding: '0.75rem 1.4rem 1.2rem', overflowY: 'auto' }}>
+              {highlights.length === 0 ? (
+                <div style={{ color: 'var(--text-light)', fontSize: '0.9rem', textAlign: 'center', padding: '1.5rem 0' }}>
+                  No highlights yet. Select any text in the book and pick a colour to mark important points.
+                </div>
+              ) : (
+                [...highlights].sort((a, b) => a.page - b.page || a.createdAt - b.createdAt).map(h => (
+                  <div
+                    key={h.id}
+                    style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem', padding: '0.7rem 0', borderBottom: '1px solid var(--border)' }}
+                  >
+                    <span style={{ flexShrink: 0, width: 14, height: 14, borderRadius: '50%', background: h.color, border: '1px solid var(--border)', marginTop: 4 }} />
+                    <button
+                      onClick={() => jumpToHighlight(h)}
+                      title="Go to this highlight"
+                      style={{ flex: 1, textAlign: 'left', background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}
+                    >
+                      <div style={{ color: 'var(--text)', fontSize: '0.85rem', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                        “{h.text}”
+                      </div>
+                      <div style={{ color: 'var(--text-muted)', fontSize: '0.72rem', marginTop: '0.2rem' }}>Page {h.page}</div>
+                    </button>
+                    <button
+                      onClick={() => removeHighlight(h.id)}
+                      title="Delete highlight"
+                      style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: '0.4rem', background: 'transparent', border: 'none', color: 'var(--modal-error)', cursor: 'pointer' }}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Features guide modal */}
+      {showFeaturesModal && (
+        <div
+          onClick={() => setShowFeaturesModal(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.5)',
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1rem',
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: 'var(--card)',
+              border: '1px solid var(--border)',
+              borderRadius: '0.9rem',
+              width: '100%',
+              maxWidth: '640px',
+              maxHeight: '85vh',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+              boxShadow: '0 12px 40px rgba(0,0,0,0.3)',
+            }}
+          >
+            {/* Modal header */}
+            <div style={{
+              background: 'var(--panel-header-gradient)',
+              padding: '1.1rem 1.4rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '1rem',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', minWidth: 0 }}>
+                <span style={{ fontSize: '1.4rem' }}>✨</span>
+                <div style={{ minWidth: 0 }}>
+                  <h2 style={{ color: 'var(--panel-header-color)', fontSize: '1.1rem', fontWeight: 700, fontFamily: '"Gentium Plus", "Noto Serif Devanagari", Georgia, serif' }}>
+                    Features Guide
+                  </h2>
+                  <p style={{ color: 'var(--panel-header-color)', opacity: 0.8, fontSize: '0.78rem', marginTop: '0.1rem' }}>
+                    Everything you need to read śāstra comfortably
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowFeaturesModal(false)}
+                aria-label="Close"
+                style={{
+                  flexShrink: 0,
+                  width: 32,
+                  height: 32,
+                  borderRadius: '50%',
+                  border: '1px solid var(--header-badge-border)',
+                  background: 'var(--header-badge-bg)',
+                  color: 'var(--panel-header-color)',
+                  cursor: 'pointer',
+                  fontSize: '1rem',
+                  lineHeight: 1,
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Modal body */}
+            <div style={{ padding: '1.2rem 1.4rem', overflowY: 'auto' }}>
+              {[
+                { icon: '🌐', title: 'Read in your language', body: 'Use the EN / TE / संस्कृत buttons in the top bar to switch between English, Telugu and Sanskrit. The category tree and book lists update to show only that language.' },
+                { icon: '🌳', title: 'Browse by category', body: 'Open the sidebar to explore the Śruti and Smṛti tree. Expand a category to reach a text, then click the book title to start reading. Use Fold all / Unfold all to manage the tree.' },
+                { icon: '🔎', title: 'Search inside a book', body: 'While a book is open, type a word in the search bar and press Search. Matching passages are listed with page numbers — click any result to jump straight to that page with the word highlighted.' },
+                { icon: '🔖', title: 'Bookmarks & auto-resume', body: 'Tap the bookmark icon to save your spot. Your last read page is also remembered automatically, so reopening a book brings you back where you left off.' },
+                { icon: '🖍️', title: 'Highlight important points', body: 'Select any text in a book and pick a colour to highlight it. Your highlights are saved per book — open the highlighter icon in the toolbar to review them, jump to a passage, or delete one. Click a highlight to remove it.' },
+                { icon: '📜', title: 'Continuous reading', body: 'Pages flow like a document — just keep scrolling and the next page loads automatically. The page indicator and progress stay in sync with what you see.' },
+                { icon: '🧭', title: 'Chapter navigation', body: 'When a book is open, its chapters appear under the title in the sidebar. Click a chapter to jump directly to it.' },
+                { icon: '🔠', title: 'Adjust text size', body: 'Use A- / A+ in the reading toolbar (or the zoom icons in the header) to make the text larger or smaller for comfortable reading.' },
+                { icon: '📑', title: 'Page jump', body: 'Type a page number in the page box and press Enter, or use the ‹ › arrows to move one page at a time.' },
+                { icon: '🎨', title: 'Choose your theme', body: 'Open Settings to switch between display themes — Light, Dark and Midnight Teal. The whole app, including menus and reading pages, instantly adapts, and your choice is remembered for next time.' },
+              ].map(feature => (
+                <div
+                  key={feature.title}
+                  style={{
+                    display: 'flex',
+                    gap: '0.85rem',
+                    padding: '0.75rem 0',
+                    borderBottom: '1px solid var(--border)',
+                  }}
+                >
+                  <span style={{ fontSize: '1.3rem', flexShrink: 0, lineHeight: 1.3 }}>{feature.icon}</span>
+                  <div>
+                    <div style={{ fontWeight: 700, color: 'var(--text)', fontSize: '0.9rem' }}>{feature.title}</div>
+                    <div style={{ color: 'var(--text-light)', fontSize: '0.82rem', marginTop: '0.2rem', lineHeight: 1.55 }}>{feature.body}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Modal footer */}
+            <div style={{ padding: '0.9rem 1.4rem', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setShowFeaturesModal(false)}
+                style={{
+                  padding: '0.5rem 1.2rem',
+                  borderRadius: '0.55rem',
+                  background: 'var(--accent)',
+                  color: 'var(--btn-primary-text)',
+                  border: 'none',
+                  fontWeight: 700,
+                  fontSize: '0.85rem',
+                  cursor: 'pointer',
+                }}
+              >
+                Got it
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 

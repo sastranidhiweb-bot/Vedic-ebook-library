@@ -2,7 +2,7 @@
 
 import { Upload, List as ListIcon, Users, Link2, ZoomIn, ZoomOut, Settings as SettingsIcon, User, Menu, LogOut, X, Home } from 'lucide-react';
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import BookListModal from './BookListModal';
 import UnifiedBookUploadModal from './UnifiedBookUploadModal';
 import { fetchBooks } from '../lib/bookStorage';
@@ -35,6 +35,7 @@ const Header: React.FC<HeaderProps> = ({
   onZoomOut,
 }) => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user: authUser } = useAuth();
   const [showBooksModal, setShowBooksModal]       = useState(false);
   const [showUploadModal, setShowUploadModal]     = useState(false);
@@ -57,6 +58,27 @@ const Header: React.FC<HeaderProps> = ({
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
   }, [showMobileMenu]);
+
+  useEffect(() => {
+    const adminOpen = searchParams.get('adminOpen');
+    if (user?.role !== 'admin' || (adminOpen !== 'books' && adminOpen !== 'users')) {
+      return;
+    }
+
+    const openFromQuery = async () => {
+      if (adminOpen === 'books') {
+        await handleShowBooks();
+      } else {
+        setShowUserModal(true);
+      }
+
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete('adminOpen');
+      setSearchParams(nextParams, { replace: true });
+    };
+
+    openFromQuery();
+  }, [searchParams, setSearchParams, user?.role]);
 
   const handleShowBooks = async () => {
     setShowBooksModal(true);
@@ -134,11 +156,12 @@ const Header: React.FC<HeaderProps> = ({
               style={{
                 borderColor: 'var(--header-badge-border)',
                 background: 'var(--header-badge-bg)',
+                color: 'var(--header-text)',
                 width: 36,
                 height: 36,
               }}
             >
-              <ISKCONLogo size={26} />
+              <ISKCONLogo size={26} color="currentColor" />
             </div>
             <div className="min-w-0">
               <h1
@@ -154,7 +177,8 @@ const Header: React.FC<HeaderProps> = ({
               <p
                 className="hidden sm:block"
                 style={{
-                  color: 'var(--text-light)',
+                  color: 'var(--header-text)',
+                  opacity: 0.7,
                   fontSize: '0.55rem',
                   letterSpacing: '0.08em',
                   lineHeight: 1.2,

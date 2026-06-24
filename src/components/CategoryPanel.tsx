@@ -33,6 +33,14 @@ interface CategoryPanelProps {
 
 const API_URL = `${BACKEND_API_URL}/categories/tree`;
 
+// Normalize text for diacritic-insensitive search so that plain ASCII queries
+// (e.g. "sri", "bhagavatam") match IAST/Unicode text (e.g. "Śrī", "Bhāgavatam").
+const normalizeText = (s: string): string =>
+  (s || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+
 const CategoryPanel: React.FC<CategoryPanelProps & { bookChapters?: { text: string; wordIndex: number }[]; currentPage?: number }> = ({
   selectedLanguage,
   languageConfig,
@@ -89,15 +97,33 @@ const CategoryPanel: React.FC<CategoryPanelProps & { bookChapters?: { text: stri
   }, [refreshKey, manualRefreshKey]);
   // (Removed duplicate userPrivileges and userPrivilege declarations. Only use state variable.)
 
-  // Filter categories/books by user privilege (only after privileges loaded)
+  // Filter categories/books by user privilege AND selected language (only after
+  // privileges loaded). Recursively walks the tree so books living in deep leaf
+  // nodes (e.g. CB Adi) are filtered by language too.
   // Memoized so the reference is stable across renders. Without this, the
   // auto-expand effects below (which depend on filteredCategories) would re-run
   // on every render and immediately re-expand a node the user just collapsed.
-  const filteredCategories = useMemo(() => (userPrivileges ? categories.map(category => ({
-    ...category,
-    books: category.books ? category.books.filter((book: any) => userPrivileges.includes(book.type)) : [],
-    children: category.children ? category.children : [],
-  })) : []), [categories, userPrivileges]);
+  const filteredCategories = useMemo(() => {
+    if (!userPrivileges) return [];
+    const matchesLanguage = (book: any) => {
+      if (selectedLanguage === 'all') return true;
+      const lang = (book.language || '').toString().toLowerCase();
+      const tags: string[] = Array.isArray(book.tags) ? book.tags.map((t: any) => String(t).toLowerCase()) : [];
+      if (selectedLanguage === 'telugu') return lang ? lang === 'telugu' : tags.some(t => t.includes('telugu'));
+      if (selectedLanguage === 'sanskrit') return lang ? lang === 'sanskrit' : tags.some(t => t.includes('sanskrit'));
+      // english (default): explicitly english, or no telugu/sanskrit marker
+      if (lang) return lang === 'english';
+      return !tags.some(t => t.includes('telugu') || t.includes('sanskrit'));
+    };
+    const filterNode = (node: any, isTop: boolean): any => ({
+      ...node,
+      books: node.books
+        ? node.books.filter((book: any) => (isTop ? userPrivileges.includes(book.type) : true) && matchesLanguage(book))
+        : [],
+      children: node.children ? node.children.map((child: any) => filterNode(child, false)) : [],
+    });
+    return categories.map((category: any) => filterNode(category, true));
+  }, [categories, userPrivileges, selectedLanguage]);
 
 
   // Controlled expansion state for the MUI TreeView
@@ -367,12 +393,31 @@ const CategoryPanel: React.FC<CategoryPanelProps & { bookChapters?: { text: stri
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [highlightCategory, filteredCategories]);
 
+  // Flatten every book from the nested category tree (deduped by id) so the
+  // Authors / Title tabs include books nested inside child categories, not just
+  // those attached directly to top-level nodes.
+  const allBooksFlat = useMemo(() => {
+    const seen = new Set<string>();
+    const out: Book[] = [];
+    const walk = (nodes: any[]) => {
+      nodes.forEach(node => {
+        (node.books || []).forEach((b: Book) => {
+          const id = String(b._id);
+          if (id && !seen.has(id)) { seen.add(id); out.push(b); }
+        });
+        if (node.children) walk(node.children);
+      });
+    };
+    walk(filteredCategories);
+    return out;
+  }, [filteredCategories]);
+
   // Organize books by author first letter
   const authorGroups = useMemo(() => {
     const groups: {[key: string]: {author: string; books: Book[]}[]} = {};
     
-    // Get all books from all filtered categories
-    const allBooks = filteredCategories.flatMap(category => category.books);
+    // Get all books from the entire (nested) filtered category tree
+    const allBooks = allBooksFlat;
     
     // Group books by author
     const authorMap = new Map<string, Book[]>();
@@ -411,14 +456,14 @@ const CategoryPanel: React.FC<CategoryPanelProps & { bookChapters?: { text: stri
     });
     
     return groups;
-  }, [filteredCategories]);
+  }, [allBooksFlat]);
 
   // Organize books by title first letter
   const titleGroups = useMemo(() => {
     const groups: {[key: string]: Book[]} = {};
     
-    // Get all books from all filtered categories
-    const allBooks = filteredCategories.flatMap(category => category.books);
+    // Get all books from the entire (nested) filtered category tree
+    const allBooks = allBooksFlat;
     
     // Function to get the first alphabetical letter from title, ignoring numbers and honorifics
     const getFirstAlphabeticalLetter = (title: string): string => {
@@ -457,18 +502,26 @@ const CategoryPanel: React.FC<CategoryPanelProps & { bookChapters?: { text: stri
     });
     
     return groups;
-  }, [filteredCategories]);
+  }, [allBooksFlat]);
 
   // Filtered data per tab based on searchQuery
   const filteredTree = useMemo(() => {
     if (!searchQuery.trim()) return filteredCategories;
-    const q = searchQuery.toLowerCase();
+    const q = normalizeText(searchQuery);
     function filterNodes(nodes: any[]): any[] {
       return nodes.reduce((acc: any[], node) => {
         const children = filterNodes(node.children || []);
-        const nameMatch = (node.name || '').toLowerCase().includes(q);
-        if (nameMatch || children.length > 0) {
-          acc.push({ ...node, children });
+        const nameMatch = normalizeText(node.name || '').includes(q);
+        // When the category name matches, keep all its books; otherwise keep
+        // only the books whose title or author match the query.
+        const matchedBooks = nameMatch
+          ? (node.books || [])
+          : (node.books || []).filter((b: any) =>
+              normalizeText(b.title || '').includes(q) ||
+              normalizeText(b.author || '').includes(q)
+            );
+        if (nameMatch || children.length > 0 || matchedBooks.length > 0) {
+          acc.push({ ...node, children, books: matchedBooks });
         }
         return acc;
       }, []);
@@ -478,10 +531,10 @@ const CategoryPanel: React.FC<CategoryPanelProps & { bookChapters?: { text: stri
 
   const filteredAuthorGroups = useMemo(() => {
     if (!searchQuery.trim()) return authorGroups;
-    const q = searchQuery.toLowerCase();
+    const q = normalizeText(searchQuery);
     const result: typeof authorGroups = {};
     Object.entries(authorGroups).forEach(([letter, authors]) => {
-      const matched = authors.filter(({ author }) => author.toLowerCase().includes(q));
+      const matched = authors.filter(({ author }) => normalizeText(author).includes(q));
       if (matched.length > 0) result[letter] = matched;
     });
     return result;
@@ -489,10 +542,10 @@ const CategoryPanel: React.FC<CategoryPanelProps & { bookChapters?: { text: stri
 
   const filteredTitleGroups = useMemo(() => {
     if (!searchQuery.trim()) return titleGroups;
-    const q = searchQuery.toLowerCase();
+    const q = normalizeText(searchQuery);
     const result: typeof titleGroups = {};
     Object.entries(titleGroups).forEach(([letter, books]) => {
-      const matched = books.filter(book => book.title.toLowerCase().includes(q));
+      const matched = books.filter(book => normalizeText(book.title).includes(q));
       if (matched.length > 0) result[letter] = matched;
     });
     return result;
@@ -543,52 +596,66 @@ const CategoryPanel: React.FC<CategoryPanelProps & { bookChapters?: { text: stri
         {sortedLetters.map((letter) => {
           const isLetterOpen = isSearching || !!expandedLetters[letter];
           return (
-            <div key={letter} className="border-b border-yellow-200">
+            <div key={letter} style={{ borderBottom: '1px solid var(--border)' }}>
               <button
                 onClick={() => toggleLetterExpanded(letter)}
-                className="w-full p-4 text-left hover:bg-yellow-100 flex items-center justify-between group transition-colors"
+                className="w-full p-3 text-left flex items-center justify-between group transition-colors"
+                style={{ background: 'transparent' }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--card-hover)'; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
               >
                 <div className="flex items-center space-x-3">
                   <Plus
                     className={`w-4 h-4 transition-transform ${isLetterOpen ? 'transform rotate-45' : ''}`}
                     style={{ color: 'var(--accent-deep)' }}
                   />
-                  <span className="font-medium text-lg" style={{ color: "var(--text)" }}>{letter}</span>
+                  <span className="font-semibold" style={{ color: 'var(--text)', fontSize: '1em' }}>{letter}</span>
                 </div>
               </button>
 
               {isLetterOpen && (
-                <div className="bg-yellow-50">
+                <div>
                   {filteredAuthorGroups[letter].map(({ author, books }) => {
                     const isAuthorOpen = isSearching || !!expandedAuthors[author];
                     return (
-                      <div key={author} className="border-b border-yellow-200 last:border-b-0">
+                      <div key={author} style={{ borderBottom: '1px solid var(--border)' }} className="last:border-b-0">
                         <button
                           onClick={() => toggleAuthorExpanded(author)}
-                          className="w-full p-3 pl-8 text-left hover:bg-yellow-100 flex items-center justify-between group transition-colors"
+                          className="w-full p-2 pl-8 text-left flex items-center justify-between group transition-colors"
+                          style={{ background: 'transparent' }}
+                          onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--card-hover)'; }}
+                          onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
                         >
                           <div className="flex items-center space-x-3">
                             <Plus
                               className={`w-3 h-3 transition-transform ${isAuthorOpen ? 'transform rotate-45' : ''}`}
                               style={{ color: 'var(--accent-deep)' }}
                             />
-                            <span className="font-medium" style={{ color: "var(--text)" }}>{author}</span>
+                            <span className="font-medium" style={{ color: 'var(--text)', fontSize: '0.95em' }}>{author}</span>
                           </div>
                         </button>
 
                         {isAuthorOpen && (
-                          <div className="bg-yellow-50">
-                            {books.map((book) => (
-                              <button
-                                key={book._id}
-                                onClick={() => onBookSelection(book)}
-                                className={`w-full p-3 pl-16 text-left hover:bg-yellow-200 transition-colors ${
-                                  bookId === book._id ? 'bg-yellow-200 text-amber-900' : ''
-                                }`}
-                              >
-                                <div className="text-sm font-medium">{book.title}</div>
-                              </button>
-                            ))}
+                          <div>
+                            {books.map((book) => {
+                              const selected = bookId === book._id;
+                              return (
+                                <button
+                                  key={book._id}
+                                  onClick={() => onBookSelection(book)}
+                                  className="w-full p-2 pl-16 text-left transition-colors"
+                                  style={{
+                                    background: selected ? 'var(--accent)' : 'transparent',
+                                    color: selected ? 'var(--bg)' : 'var(--text)',
+                                    fontWeight: selected ? 700 : 400,
+                                  }}
+                                  onMouseEnter={(e) => { if (!selected) (e.currentTarget as HTMLButtonElement).style.background = 'var(--card-hover)'; }}
+                                  onMouseLeave={(e) => { if (!selected) (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
+                                >
+                                  <div style={{ fontSize: '1em' }}>{book.title}</div>
+                                </button>
+                              );
+                            })}
                           </div>
                         )}
                       </div>
@@ -620,38 +687,49 @@ const CategoryPanel: React.FC<CategoryPanelProps & { bookChapters?: { text: stri
         {sortedLetters.map((letter) => {
           const isOpen = isSearching || !!expandedTitleLetters[letter];
           return (
-            <div key={letter} className="border-b border-yellow-200">
+            <div key={letter} style={{ borderBottom: '1px solid var(--border)' }}>
               <button
                 onClick={() => toggleTitleLetterExpanded(letter)}
-                className="w-full p-4 text-left hover:bg-yellow-100 flex items-center justify-between group transition-colors"
+                className="w-full p-3 text-left flex items-center justify-between group transition-colors"
+                style={{ background: 'transparent' }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--card-hover)'; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
               >
                 <div className="flex items-center space-x-3">
                   <Plus
                     className={`w-4 h-4 transition-transform ${isOpen ? 'transform rotate-45' : ''}`}
                     style={{ color: 'var(--accent-deep)' }}
                   />
-                  <span className="font-medium text-lg" style={{ color: "var(--text)" }}>{letter}</span>
+                  <span className="font-semibold" style={{ color: 'var(--text)', fontSize: '1em' }}>{letter}</span>
                 </div>
               </button>
 
               {isOpen && (
-                <div className="bg-yellow-50">
+                <div>
                   {filteredTitleGroups[letter]
                     .sort((a, b) => a.title.localeCompare(b.title))
-                    .map((book) => (
-                      <button
-                        key={book._id}
-                        onClick={() => onBookSelection(book)}
-                        className={`w-full p-3 pl-12 text-left hover:bg-yellow-200 transition-colors ${
-                          bookId === book._id ? 'bg-yellow-200 text-amber-900' : ''
-                        }`}
-                      >
-                        <div className="text-sm font-medium">{book.title}</div>
-                        {book.author && (
-                          <div className="text-xs mt-1">{book.author}</div>
-                        )}
-                      </button>
-                    ))}
+                    .map((book) => {
+                      const selected = bookId === book._id;
+                      return (
+                        <button
+                          key={book._id}
+                          onClick={() => onBookSelection(book)}
+                          className="w-full p-2 pl-12 text-left transition-colors"
+                          style={{
+                            background: selected ? 'var(--accent)' : 'transparent',
+                            color: selected ? 'var(--bg)' : 'var(--text)',
+                            fontWeight: selected ? 700 : 400,
+                          }}
+                          onMouseEnter={(e) => { if (!selected) (e.currentTarget as HTMLButtonElement).style.background = 'var(--card-hover)'; }}
+                          onMouseLeave={(e) => { if (!selected) (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
+                        >
+                          <div style={{ fontSize: '1em' }}>{book.title}</div>
+                          {book.author && (
+                            <div style={{ fontSize: '0.82em', marginTop: 2, color: selected ? 'var(--bg)' : 'var(--text-muted)' }}>{book.author}</div>
+                          )}
+                        </button>
+                      );
+                    })}
                 </div>
               )}
             </div>
@@ -732,7 +810,7 @@ const CategoryPanel: React.FC<CategoryPanelProps & { bookChapters?: { text: stri
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             placeholder={
-              activeTab === 'categories' ? 'Search categories…' :
+              activeTab === 'categories' ? 'Search categories & books…' :
               activeTab === 'authors'    ? 'Search authors…'    :
                                           'Search titles…'
             }
