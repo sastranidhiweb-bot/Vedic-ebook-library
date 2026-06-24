@@ -68,7 +68,10 @@ const CategoryPanel: React.FC<CategoryPanelProps & { bookChapters?: { text: stri
     // Fetch categories
     axios.get(API_URL)
       .then(res => {
-        setCategories(res.data || []);
+        // Guard against a misconfigured API base returning HTML (e.g. the SPA
+        // index.html) instead of a JSON array — otherwise `.map`/`.filter`
+        // downstream would throw and white-screen the whole app.
+        setCategories(Array.isArray(res.data) ? res.data : []);
         setLoading(false);
       })
       .catch(() => setLoading(false));
