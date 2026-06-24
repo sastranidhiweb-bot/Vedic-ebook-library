@@ -5,5 +5,4 @@ Allow: /
 # Keep private/admin and auth pages out of the index
 Disallow: /login
 
-# Replace your-domain.com with your real production domain
-Sitemap: https://your-domain.com/sitemap.xml
+Sitemap: https://www.sastranidhi.org/sitemap.xml
